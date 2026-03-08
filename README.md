@@ -2,15 +2,13 @@
 
 ## Overview
 
-**Flipper-ARF** is an independently developed firmware fork for Flipper Zero, designed for **automotive research and experimentation**.
+**Flipper-ARF** is an independently developed firmware fork for Flipper Zero, based on **Unleashed Firmware** but heavily modified. Unlike standard firmware builds, it removes typical general-purpose functions and focuses exclusively on **automotive research and experimentation**.
 
 The goal of this firmware is to provide a **high-compatibility, protocol-focused build** for personal use, academic study, and responsible security research. It focuses on **automotive remote protocols, rolling code behavior, and keyfob ecosystem compatibility**.
 
 This project may incorporate, adapt, or build upon **other open-source projects** in accordance with their licenses, with proper attribution.
 
 ---
-
-
 
 ### How to Build
 
@@ -73,7 +71,6 @@ All modifications remain compatible with the **Flipper Zero open-source API stru
 
 ---
 
-
 ## Research Direction
 
 Future development focuses on:
@@ -96,6 +93,7 @@ Contributions are welcome if they:
 
 > Non-automotive features are considered out-of-scope for now.
 
+---
 
 # Disclaimer
 
