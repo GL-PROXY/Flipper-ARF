@@ -1,3 +1,109 @@
+# Flipper-ARF: Automotive Research Firmware
+
+## Overview
+
+**Flipper-ARF** is an independently developed firmware fork for Flipper Zero, designed for **automotive research and experimentation**.
+
+The goal of this firmware is to provide a **high-compatibility, protocol-focused build** for personal use, academic study, and responsible security research. It focuses on **automotive remote protocols, rolling code behavior, and keyfob ecosystem compatibility**.
+
+This project may incorporate, adapt, or build upon **other open-source projects** in accordance with their licenses, with proper attribution.
+
+---
+
+
+
+### How to Build
+
+Compact release build:
+
+```
+./fbt COMPACT=1 DEBUG=0 updater_package
+```
+
+---
+
+## Project Scope
+
+Flipper-ARF aims to achieve:
+
+- Maximum compatibility with automotive Sub-GHz rolling and static protocols
+- Accurate OEM-style remote emulation
+- Stable encoder/decoder implementations
+- Modular protocol expansion
+
+**Primary focus:** VAG, PSA, Fiat, Ford, Asian platforms, and aftermarket alarm systems.
+
+> ⚠ This is a protocol-focused research firmware, not a general-purpose firmware.
+
+---
+
+## Implemented Protocols
+
+- [x] Mazda Siemens Protocol (5WK49365D) — ported from open-source references (testing required)
+- [x] Full VAG, Fiat, Ford, Subaru, Kia, PSA support
+- [x] D-Pad mapping (Lock / Unlock / Boot / Trunk) during emulation
+- [x] VAG MFKey support and updated Keeloq codes
+- [x] PSA XTEA brute force for saved → emulation workflow
+- [x] Brute force of counter in saved → emulation scene for smoother keyfob emulation
+- [x] RollJam app (Internal CC1101 for RX & TX captured signal; External CC1101 for jamming) — requires more real-world testing
+
+---
+
+## To Do / Planned Features
+
+- [ ] Keeloq Key Manager inside firmware
+- [ ] Add Scher Khan & Starline protocols
+- [ ] Fix and reintegrate RollJam Pro app
+- [ ] Expand and refine Subaru, Kia, PSA, and other manufacturer protocols
+- [ ] Improve collaboration workflow to avoid overlapping work
+
+---
+
+## Design Philosophy
+
+Flipper-ARF is built around:
+
+- Clean and accurate protocol implementation
+- Controlled rolling counter handling
+- Automotive-specific encoder accuracy
+- Minimal UI changes
+- Stability over feature bloat
+
+All modifications remain compatible with the **Flipper Zero open-source API structure** where possible.
+
+---
+
+## Compatibility
+
+- Fully compatible with Flipper Zero build system
+- Supports compact builds
+- Maintains structural compatibility with standard open-source Flipper firmware
+
+---
+
+## Research Direction
+
+Future development focuses on:
+
+- Rolling code synchronization behavior
+- Manufacturer-specific signal modulation quirks
+- Frame validation differences between OEM and aftermarket systems
+- Encoder stability and replay consistency
+
+---
+
+## Contribution Policy
+
+Contributions are welcome if they:
+
+- Improve protocol stability
+- Add automotive protocol support
+- Improve parsing/encoding reliability
+- Maintain structural and modular cleanliness
+
+> Non-automotive features are considered out-of-scope for now.
+
+
 # Disclaimer
 
 This project is provided solely for **educational, research, and interoperability purposes**.  
