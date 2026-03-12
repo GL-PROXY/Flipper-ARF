@@ -10,6 +10,22 @@ This project may incorporate, adapt, or build upon **other open-source projects*
 
 ---
 
+## Table of Contents
+
+- [Showcase](#showcase)
+- [Supported Systems](#supported-systems)
+- [How to Build](#how-to-build)
+- [Project Scope](#project-scope)
+- [Implemented Protocols](#implemented-protocols)
+- [To Do / Planned Features](#to-do--planned-features)
+- [Design Philosophy](#design-philosophy)
+- [Research Direction](#research-direction)
+- [Contribution Policy](#contribution-policy)
+- [Citations & References](#citations--references)
+- [Disclaimer](#disclaimer)
+
+---
+
 ## Showcase
 
 | | |
@@ -124,13 +140,13 @@ Flipper-ARF aims to achieve:
 - [x] VAG MFKey support and updated Keeloq codes
 - [x] PSA XTEA brute force for saved → emulation workflow
 - [x] Brute force of counter in saved → can be accellerated trough the companion app via bluetooth
-- [x] RollJam app (Internal CC1101 for RX & TX captured signal; External CC1101 for jamming) — requires more real-world testing
+- [X] Keeloq Key Manager inside firmware
+- [x] RollJam app (Internal CC1101 for RX & TX captured signal; External CC1101 for jamming) — requires more real-world testing (no available yet)
 
 ---
 
 ## To Do / Planned Features
 
-- [X] Keeloq Key Manager inside firmware
 - [ ] Add Scher Khan & Starline protocols
 - [ ] Fix and reintegrate RollJam app (future updates)
 - [ ] Expand and refine Subaru, Kia, PSA, and other manufacturer protocols
@@ -199,6 +215,37 @@ The following academic publications have been invaluable to the development and 
   *November 2023*
   DOI: [10.5281/zenodo.14677864](https://doi.org/10.5281/zenodo.14677864)
 
+- **SoK: Stealing Cars Since Remote Keyless Entry Introduction and How to Defend From It**
+  Tommaso Bianchi, Alessandro Brighente, Mauro Conti, Edoardo Pavan — University of Padova / Delft University of Technology
+  *arXiv, 2025*
+  https://arxiv.org/pdf/2505.02713
+
+- **Security of Automotive Systems**
+  Lennert Wouters, Benedikt Gierlichs, Bart Preneel
+  *Wiley, February 2025*
+  DOI: [10.1002/9781394351930.ch11](https://doi.org/10.1002/9781394351930.ch11)
+
+### KeeLoq Cryptanalysis
+
+- **Cryptanalysis of the KeeLoq Block Cipher**
+  Andrey Bogdanov
+  *Cryptology ePrint Archive, Paper 2007/055*
+  https://eprint.iacr.org/2007/055
+
+- **On the Power of Power Analysis in the Real World: A Complete Break of the KeeLoq Code Hopping Scheme**
+  Thomas Eisenbarth, Timo Kasper, Amir Moradi, Christof Paar, Mahmoud Salmasizadeh, Mohammad T. Manzuri Shalmani
+  *CRYPTO 2008*
+  https://www.iacr.org/archive/crypto2008/51570204/51570204.pdf
+
+- **A Practical Attack on KeeLoq**
+  Sebastiaan Indesteege, Nathan Keller, Orr Dunkelman, Eli Biham, Bart Preneel
+  *EUROCRYPT 2008*
+  https://www.iacr.org/archive/eurocrypt2008/49650001/49650001.pdf
+
+- **Breaking KeeLoq in a Flash: On Extracting Keys at Lightning Speed**
+  *Springer*
+  DOI: [10.1007/978-3-642-02384-2_25](https://doi.org/10.1007/978-3-642-02384-2_25)
+
 ### Immobiliser & Transponder Systems
 
 - **Dismantling DST80-based Immobiliser Systems**
@@ -222,6 +269,16 @@ The following academic publications have been invaluable to the development and 
 - **Enhanced Vehicular Roll-Jam Attack Using a Known Noise Source**
   *Inaugural International Symposium on Vehicle Security & Privacy, January 2023*
   DOI: [10.14722/vehiclesec.2023.23037](https://doi.org/10.14722/vehiclesec.2023.23037)
+
+- **RollBack: A New Time-Agnostic Replay Attack Against the Automotive Remote Keyless Entry Systems**
+  Levente Csikor, Hoon Wei Lim, Jun Wen Wong, Soundarya Ramesh, Rohini Poolat Parameswarath, Mun Choon Chan
+  *ACM*
+  DOI: [10.1145/3627827](https://doi.org/10.1145/3627827)
+
+- **Relay Attacks on Passive Keyless Entry and Start Systems in Modern Cars**
+  Aurelien Francillon, Boris Danev, Srdjan Capkun
+  *NDSS 2011*
+  https://www.ndss-symposium.org/ndss2011/relay-attacks-on-passive-keyless-entry-and-start-systems-in-modern-cars/
 
 ---
 
