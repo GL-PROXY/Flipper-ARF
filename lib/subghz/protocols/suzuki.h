@@ -1,20 +1,15 @@
 #pragma once
 
-#include <furi.h>
-#include <lib/subghz/protocols/base.h>
-#include <lib/subghz/types.h>
-#include <lib/subghz/blocks/const.h>
-#include <lib/subghz/blocks/decoder.h>
-#include <lib/subghz/blocks/encoder.h>
-#include <lib/subghz/blocks/generic.h>
-#include <lib/subghz/blocks/math.h>
-#include <flipper_format/flipper_format.h>
+#include "base.h"
+#include "../blocks/math.h"
 
-#define SUZUKI_PROTOCOL_NAME "Suzuki"
+#define SUBGHZ_PROTOCOL_SUZUKI_NAME "SUZUKI"
 
-extern const SubGhzProtocol suzuki_protocol;
+typedef struct SubGhzProtocolDecoderSuzuki SubGhzProtocolDecoderSuzuki;
+typedef struct SubGhzProtocolEncoderSuzuki SubGhzProtocolEncoderSuzuki;
 
-// Decoder functions
+extern const SubGhzProtocol subghz_protocol_suzuki;
+
 void* subghz_protocol_decoder_suzuki_alloc(SubGhzEnvironment* environment);
 void subghz_protocol_decoder_suzuki_free(void* context);
 void subghz_protocol_decoder_suzuki_reset(void* context);
@@ -24,14 +19,11 @@ SubGhzProtocolStatus subghz_protocol_decoder_suzuki_serialize(
     void* context,
     FlipperFormat* flipper_format,
     SubGhzRadioPreset* preset);
-SubGhzProtocolStatus
-    subghz_protocol_decoder_suzuki_deserialize(void* context, FlipperFormat* flipper_format);
+SubGhzProtocolStatus subghz_protocol_decoder_suzuki_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_decoder_suzuki_get_string(void* context, FuriString* output);
 
-// Encoder functions
 void* subghz_protocol_encoder_suzuki_alloc(SubGhzEnvironment* environment);
 void subghz_protocol_encoder_suzuki_free(void* context);
-SubGhzProtocolStatus
-    subghz_protocol_encoder_suzuki_deserialize(void* context, FlipperFormat* flipper_format);
+SubGhzProtocolStatus subghz_protocol_encoder_suzuki_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_encoder_suzuki_stop(void* context);
 LevelDuration subghz_protocol_encoder_suzuki_yield(void* context);

@@ -1,17 +1,12 @@
 #pragma once
 
-#include <furi.h>
-#include <lib/subghz/protocols/base.h>
-#include <lib/subghz/types.h>
-#include <lib/subghz/blocks/const.h>
-#include <lib/subghz/blocks/decoder.h>
-#include <lib/subghz/blocks/encoder.h>
-#include <lib/subghz/blocks/generic.h>
-#include <lib/subghz/blocks/math.h>
-#include <flipper_format/flipper_format.h>
+#include "base.h"
+#include "../blocks/math.h"
 
+#define SUBGHZ_PROTOCOL_SUBARU_NAME "SUBARU"
 
-#define SUBARU_PROTOCOL_NAME "Subaru"
+typedef struct SubGhzProtocolDecoderSubaru SubGhzProtocolDecoderSubaru;
+typedef struct SubGhzProtocolEncoderSubaru SubGhzProtocolEncoderSubaru;
 
 extern const SubGhzProtocol subghz_protocol_subaru;
 
@@ -25,14 +20,14 @@ SubGhzProtocolStatus subghz_protocol_decoder_subaru_serialize(
     void* context,
     FlipperFormat* flipper_format,
     SubGhzRadioPreset* preset);
-SubGhzProtocolStatus
-    subghz_protocol_decoder_subaru_deserialize(void* context, FlipperFormat* flipper_format);
+SubGhzProtocolStatus subghz_protocol_decoder_subaru_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_decoder_subaru_get_string(void* context, FuriString* output);
 
 // Encoder functions
 void* subghz_protocol_encoder_subaru_alloc(SubGhzEnvironment* environment);
 void subghz_protocol_encoder_subaru_free(void* context);
-SubGhzProtocolStatus
-    subghz_protocol_encoder_subaru_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_encoder_subaru_stop(void* context);
 LevelDuration subghz_protocol_encoder_subaru_yield(void* context);
+SubGhzProtocolStatus subghz_protocol_encoder_subaru_deserialize(
+    void* context,
+    FlipperFormat* flipper_format);
