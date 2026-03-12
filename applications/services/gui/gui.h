@@ -127,6 +127,16 @@ void gui_set_lockdown_inhibit(Gui* gui, bool inhibit);
  */
 bool gui_is_lockdown(const Gui* gui);
 
+/** Set hide status bar mode
+ *
+ * When enabled, the status bar is not drawn on top of the desktop layer.
+ * Used by the slideshow to show fullscreen content without the status bar overlay.
+ *
+ * @param      gui   Gui instance
+ * @param      hide  bool, true to hide status bar
+ */
+void gui_set_hide_status_bar(Gui* gui, bool hide);
+
 /** Acquire Direct Draw lock and get Canvas instance
  *
  * This method return Canvas instance for use in monopoly mode. Direct draw lock

@@ -53,6 +53,7 @@ struct Gui {
     bool lockdown;
     bool lockdown_inhibit;
     bool direct_draw;
+    bool hide_status_bar;
     ViewPortArray_t layers[GuiLayerMAX];
     Canvas* canvas;
 

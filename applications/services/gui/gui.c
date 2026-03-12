@@ -260,7 +260,9 @@ static void gui_redraw(Gui* gui) {
                 if(!gui_redraw_window(gui)) {
                     gui_redraw_desktop(gui);
                 }
-                gui_redraw_status_bar(gui, false);
+                if(!gui->hide_status_bar) {
+                    gui_redraw_status_bar(gui, false);
+                }
             }
         }
 
@@ -510,6 +512,16 @@ bool gui_is_lockdown(const Gui* gui) {
     furi_check(gui);
 
     return gui->lockdown && !gui->lockdown_inhibit;
+}
+
+void gui_set_hide_status_bar(Gui* gui, bool hide) {
+    furi_check(gui);
+
+    gui_lock(gui);
+    gui->hide_status_bar = hide;
+    gui_unlock(gui);
+
+    gui_update(gui);
 }
 
 Canvas* gui_direct_draw_acquire(Gui* gui) {
