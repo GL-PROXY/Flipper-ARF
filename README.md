@@ -132,22 +132,10 @@ Flipper-ARF aims to achieve:
 
 ---
 
-## Implemented Protocols
-
-- [x] Mazda Siemens Protocol (5WK49365D) — ported from open-source references (testing required)
-- [x] Full VAG, Fiat, Ford, Subaru, Kia, PSA support
-- [x] D-Pad mapping (Lock / Unlock / Boot / Trunk) during emulation
-- [x] VAG MFKey support and updated Keeloq codes
-- [x] PSA XTEA brute force for saved → emulation workflow
-- [x] Brute force of counter in saved → can be accellerated trough the companion app via bluetooth
-- [X] Keeloq Key Manager inside firmware
-- [x] RollJam app (Internal CC1101 for RX & TX captured signal; External CC1101 for jamming) — requires more real-world testing (no available yet)
-
----
-
 ## To Do / Planned Features
 
 - [ ] Add Scher Khan & Starline protocols
+- [ ] Marelli BSI encodere and encryption
 - [ ] Fix and reintegrate RollJam app (future updates)
 - [ ] Expand and refine Subaru, Kia, PSA, and other manufacturer protocols
 - [ ] Improve collaboration workflow to avoid overlapping work
