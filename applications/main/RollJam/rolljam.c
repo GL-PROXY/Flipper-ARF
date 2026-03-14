@@ -43,6 +43,20 @@ const char* mod_names[] = {
     "FM 476",
 };
 
+const uint32_t jam_offset_values[] = {
+    300000,
+    500000,
+    700000,
+    1000000,
+};
+
+const char* jam_offset_names[] = {
+    "300 kHz",
+    "500 kHz",
+    "700 kHz",
+    "1000 kHz",
+};
+
 // ============================================================
 // Scene handlers table (extern declarations in scene header)
 // ============================================================
@@ -100,10 +114,11 @@ static RollJamApp* rolljam_app_alloc(void) {
     RollJamApp* app = malloc(sizeof(RollJamApp));
     memset(app, 0, sizeof(RollJamApp));
 
-    // Defaults
     app->freq_index = FreqIndex_433_92;
     app->frequency = freq_values[FreqIndex_433_92];
     app->mod_index = ModIndex_AM650;
+    app->jam_offset_index = JamOffIndex_700k;
+    app->jam_offset_hz = jam_offset_values[JamOffIndex_700k];
 
     // Services
     app->gui = furi_record_open(RECORD_GUI);
@@ -203,7 +218,7 @@ int32_t rolljam_app(void* p) {
 
     FURI_LOG_I(TAG, "=== RollJam Started ===");
     FURI_LOG_I(TAG, "Internal CC1101 = RX capture (narrow BW)");
-    FURI_LOG_I(TAG, "External CC1101 = TX jam (offset +%lu Hz)", (uint32_t)JAM_OFFSET_HZ);
+    FURI_LOG_I(TAG, "External CC1101 = TX jam (offset +%lu Hz)", app->jam_offset_hz);
 
     scene_manager_next_scene(app->scene_manager, RollJamSceneMenu);
     view_dispatcher_run(app->view_dispatcher);

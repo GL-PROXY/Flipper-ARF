@@ -91,6 +91,50 @@ static const uint8_t preset_ook_tx[] = {
     0x00, 0x00
 };
 
+static const uint8_t preset_fsk_tx_238[] = {
+    CC_IOCFG0,   0x0D,
+    CC_FIFOTHR,  0x47,
+    CC_MDMCFG4,  0x8C,
+    CC_MDMCFG3,  0x32,
+    CC_MDMCFG2,  0x00,
+    CC_MDMCFG1,  0x00,
+    CC_MDMCFG0,  0x00,
+    CC_DEVIATN,  0x15,
+    CC_MCSM0,    0x18,
+    CC_FOCCFG,   0x16,
+    CC_AGCCTRL2, 0x07,
+    CC_AGCCTRL1, 0x00,
+    CC_AGCCTRL0, 0x91,
+    CC_FREND0,   0x10,
+    CC_FSCAL3,   0xEA,
+    CC_FSCAL2,   0x2A,
+    CC_FSCAL1,   0x00,
+    CC_FSCAL0,   0x1F,
+    0x00, 0x00
+};
+
+static const uint8_t preset_fsk_tx_476[] = {
+    CC_IOCFG0,   0x0D,
+    CC_FIFOTHR,  0x47,
+    CC_MDMCFG4,  0x8C,
+    CC_MDMCFG3,  0x32,
+    CC_MDMCFG2,  0x00,
+    CC_MDMCFG1,  0x00,
+    CC_MDMCFG0,  0x00,
+    CC_DEVIATN,  0x47,
+    CC_MCSM0,    0x18,
+    CC_FOCCFG,   0x16,
+    CC_AGCCTRL2, 0x07,
+    CC_AGCCTRL1, 0x00,
+    CC_AGCCTRL0, 0x91,
+    CC_FREND0,   0x10,
+    CC_FSCAL3,   0xEA,
+    CC_FSCAL2,   0x2A,
+    CC_FSCAL1,   0x00,
+    CC_FSCAL0,   0x1F,
+    0x00, 0x00
+};
+
 // ============================================================
 // Capture state machine
 // ============================================================
@@ -132,6 +176,7 @@ static volatile int cap_valid_count;
 static volatile int cap_total_count;
 static volatile bool cap_target_first;
 static volatile uint32_t cap_callback_count;
+static volatile float cap_rssi_baseline;
 
 static void capture_rx_callback(bool level, uint32_t duration, void* context) {
     RollJamApp* app = context;
@@ -251,7 +296,13 @@ void rolljam_capture_start(RollJamApp* app) {
 
     furi_delay_ms(5);
 
-    // Reset state machine
+    furi_hal_subghz_rx();
+    furi_delay_ms(50);
+    cap_rssi_baseline = furi_hal_subghz_get_rssi();
+    furi_hal_subghz_idle();
+    furi_delay_ms(5);
+    FURI_LOG_I(TAG, "Capture: RSSI baseline=%.1f dBm", (double)cap_rssi_baseline);
+
     cap_state = CapWaiting;
     cap_valid_count = 0;
     cap_total_count = 0;
@@ -339,8 +390,19 @@ bool rolljam_signal_is_valid(RawSignal* signal) {
     int ratio_pct = (total > 0) ? ((good * 100) / total) : 0;
 
     if(ratio_pct > 50 && good >= MIN_FRAME_PULSES) {
-        FURI_LOG_I(TAG, "Signal VALID: %d/%d (%d%%) samples=%d",
-                   good, total, ratio_pct, total);
+        float rssi = furi_hal_subghz_get_rssi();
+        float rssi_delta = rssi - cap_rssi_baseline;
+        FURI_LOG_I(TAG, "Signal VALID: %d/%d (%d%%) samples=%d rssi=%.1f delta=%.1f",
+                   good, total, ratio_pct, total, (double)rssi, (double)rssi_delta);
+        if(rssi_delta < 5.0f && rssi < -85.0f) {
+            FURI_LOG_W(TAG, "Signal rejected: RSSI too low (%.1f dBm, delta=%.1f)",
+                       (double)rssi, (double)rssi_delta);
+            signal->size = 0;
+            cap_state = CapWaiting;
+            cap_valid_count = 0;
+            cap_total_count = 0;
+            return false;
+        }
         return true;
     }
 
@@ -350,6 +412,70 @@ bool rolljam_signal_is_valid(RawSignal* signal) {
     cap_valid_count = 0;
     cap_total_count = 0;
     return false;
+}
+
+// ============================================================
+// Signal cleanup
+// ============================================================
+
+void rolljam_signal_cleanup(RawSignal* signal) {
+    if(signal->size < MIN_FRAME_PULSES) return;
+
+    int16_t* cleaned = malloc(RAW_SIGNAL_MAX_SIZE * sizeof(int16_t));
+    if(!cleaned) return;
+    size_t out = 0;
+
+    size_t start = 0;
+    while(start < signal->size) {
+        int16_t val = signal->data[start];
+        int16_t abs_val = val > 0 ? val : -val;
+        if(abs_val >= MIN_PULSE_US) break;
+        start++;
+    }
+
+    for(size_t i = start; i < signal->size; i++) {
+        int16_t val = signal->data[i];
+        int16_t abs_val = val > 0 ? val : -val;
+        bool is_positive = val > 0;
+
+        if(abs_val < MIN_PULSE_US) {
+            if(out > 0) {
+                int16_t prev = cleaned[out - 1];
+                bool prev_positive = prev > 0;
+                int16_t prev_abs = prev > 0 ? prev : -prev;
+                if(prev_positive == is_positive) {
+                    int32_t merged = (int32_t)prev_abs + abs_val;
+                    if(merged > 32767) merged = 32767;
+                    cleaned[out - 1] = prev_positive ? (int16_t)merged : -(int16_t)merged;
+                }
+            }
+            continue;
+        }
+
+        int16_t quantized = (int16_t)(((abs_val + 50) / 100) * 100);
+        if(quantized < MIN_PULSE_US) quantized = MIN_PULSE_US;
+        if(quantized > 32767) quantized = 32767;
+
+        if(out < RAW_SIGNAL_MAX_SIZE) {
+            cleaned[out++] = is_positive ? quantized : -quantized;
+        }
+    }
+
+    while(out > 0) {
+        int16_t last = cleaned[out - 1];
+        int16_t abs_last = last > 0 ? last : -last;
+        if(abs_last >= MIN_PULSE_US && abs_last < 32767) break;
+        out--;
+    }
+
+    if(out >= MIN_FRAME_PULSES) {
+        size_t orig = signal->size;
+        memcpy(signal->data, cleaned, out * sizeof(int16_t));
+        signal->size = out;
+        FURI_LOG_I(TAG, "Cleanup: %d -> %d samples", (int)orig, (int)out);
+    }
+
+    free(cleaned);
 }
 
 // ============================================================
@@ -387,7 +513,19 @@ void rolljam_transmit_signal(RollJamApp* app, RawSignal* signal) {
     furi_hal_subghz_idle();
     furi_delay_ms(10);
 
-    furi_hal_subghz_load_custom_preset(preset_ook_tx);
+    const uint8_t* tx_preset;
+    switch(app->mod_index) {
+    case ModIndex_FM238:
+        tx_preset = preset_fsk_tx_238;
+        break;
+    case ModIndex_FM476:
+        tx_preset = preset_fsk_tx_476;
+        break;
+    default:
+        tx_preset = preset_ook_tx;
+        break;
+    }
+    furi_hal_subghz_load_custom_preset(tx_preset);
     uint32_t real_freq = furi_hal_subghz_set_frequency(app->frequency);
     FURI_LOG_I(TAG, "TX: freq=%lu", real_freq);
 

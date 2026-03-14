@@ -18,13 +18,6 @@
 
 #define TAG "RollJam"
 
-// ============================================================
-// Jam offset: external CC1101 transmits at target + this offset
-// Victim receiver (wide BW ~300kHz) sees the jam
-// Our internal CC1101 (narrow BW ~58kHz) rejects it
-// ============================================================
-#define JAM_OFFSET_HZ 700000
-
 // Max raw signal buffer
 #define RAW_SIGNAL_MAX_SIZE 4096
 
@@ -61,6 +54,20 @@ typedef enum {
 } ModIndex;
 
 extern const char* mod_names[];
+
+// ============================================================
+// Jam offsets
+// ============================================================
+typedef enum {
+    JamOffIndex_300k = 0,
+    JamOffIndex_500k,
+    JamOffIndex_700k,
+    JamOffIndex_1000k,
+    JamOffIndex_COUNT,
+} JamOffIndex;
+
+extern const uint32_t jam_offset_values[];
+extern const char* jam_offset_names[];
 
 // ============================================================
 // Scenes
@@ -125,8 +132,10 @@ typedef struct {
     // Settings
     FreqIndex freq_index;
     ModIndex mod_index;
+    JamOffIndex jam_offset_index;
     uint32_t frequency;
     uint32_t jam_frequency;
+    uint32_t jam_offset_hz;
 
     // Captured signals
     RawSignal signal_first;

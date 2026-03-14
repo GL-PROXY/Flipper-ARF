@@ -21,11 +21,19 @@ static void menu_mod_changed(VariableItem* item) {
     variable_item_set_current_value_text(item, mod_names[index]);
 }
 
+static void menu_jam_offset_changed(VariableItem* item) {
+    RollJamApp* app = variable_item_get_context(item);
+    uint8_t index = variable_item_get_current_value_index(item);
+
+    app->jam_offset_index = index;
+    app->jam_offset_hz = jam_offset_values[index];
+    variable_item_set_current_value_text(item, jam_offset_names[index]);
+}
+
 static void menu_enter_callback(void* context, uint32_t index) {
     RollJamApp* app = context;
 
-    if(index == 2) {
-        // "Start Attack" item
+    if(index == 3) {
         view_dispatcher_send_custom_event(
             app->view_dispatcher, RollJamEventStartAttack);
     }
@@ -55,6 +63,15 @@ void rolljam_scene_menu_on_enter(void* context) {
         app);
     variable_item_set_current_value_index(mod_item, app->mod_index);
     variable_item_set_current_value_text(mod_item, mod_names[app->mod_index]);
+
+    VariableItem* offset_item = variable_item_list_add(
+        app->var_item_list,
+        "Jam Offset",
+        JamOffIndex_COUNT,
+        menu_jam_offset_changed,
+        app);
+    variable_item_set_current_value_index(offset_item, app->jam_offset_index);
+    variable_item_set_current_value_text(offset_item, jam_offset_names[app->jam_offset_index]);
 
     // --- Start button ---
     variable_item_list_add(

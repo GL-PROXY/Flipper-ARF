@@ -24,6 +24,9 @@ void rolljam_capture_stop(RollJamApp* app);
 // Check if captured signal looks valid (not just noise)
 bool rolljam_signal_is_valid(RawSignal* signal);
 
+// Clean up captured signal: merge short pulses, quantize, trim noise
+void rolljam_signal_cleanup(RawSignal* signal);
+
 // Transmit a raw signal via internal CC1101
 void rolljam_transmit_signal(RollJamApp* app, RawSignal* signal);
 

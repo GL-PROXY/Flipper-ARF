@@ -11,6 +11,7 @@ static void phase1_timer_callback(void* context) {
 
     if(app->signal_first.size > 0 &&
        rolljam_signal_is_valid(&app->signal_first)) {
+        rolljam_signal_cleanup(&app->signal_first);
         app->signal_first.valid = true;
         view_dispatcher_send_custom_event(
             app->view_dispatcher, RollJamEventSignalCaptured);
