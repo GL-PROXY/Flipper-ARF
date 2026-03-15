@@ -242,9 +242,9 @@ void subghz_protocol_decoder_fiat_marelli_feed(void* context, bool level, uint32
     uint32_t te_short = instance->te_detected ? instance->te_detected
                                               : (uint32_t)subghz_protocol_fiat_marelli_const.te_short;
     uint32_t te_long = te_short * 2;
-    // Delta must be wide enough for asymmetric timing (Type B pos~140us neg~68us)
-    // but < te_short/2 to avoid short/long overlap
-    uint32_t te_delta = te_short * 45 / 100;
+    // Delta = te_short/2: maximum that avoids short/long overlap (boundary at 1.5*TE).
+    // Must be this wide for Type B asymmetric timing (pos~140us, neg~68us, avg~100us).
+    uint32_t te_delta = te_short / 2;
     if(te_delta < 30) te_delta = 30;
     uint32_t diff;
 
@@ -434,6 +434,7 @@ void subghz_protocol_decoder_fiat_marelli_feed(void* context, bool level, uint32
         instance->te_last = duration;
         break;
     }
+
     }
 }
 
