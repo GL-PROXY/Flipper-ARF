@@ -195,6 +195,12 @@ SubGhz* subghz_alloc(bool alloc_for_tx_only) {
         SubGhzViewIdPsaDecrypt,
         subghz_view_psa_decrypt_get_view(subghz->subghz_psa_decrypt));
 
+    subghz->subghz_keeloq_decrypt = subghz_view_keeloq_decrypt_alloc();
+    view_dispatcher_add_view(
+        subghz->view_dispatcher,
+        SubGhzViewIdKeeloqDecrypt,
+        subghz_view_keeloq_decrypt_get_view(subghz->subghz_keeloq_decrypt));
+
     //init threshold rssi
     subghz->threshold_rssi = subghz_threshold_rssi_alloc();
 
@@ -305,6 +311,10 @@ void subghz_free(SubGhz* subghz, bool alloc_for_tx_only) {
     // PSA Decrypt
     view_dispatcher_remove_view(subghz->view_dispatcher, SubGhzViewIdPsaDecrypt);
     subghz_view_psa_decrypt_free(subghz->subghz_psa_decrypt);
+
+    // KeeLoq Decrypt
+    view_dispatcher_remove_view(subghz->view_dispatcher, SubGhzViewIdKeeloqDecrypt);
+    subghz_view_keeloq_decrypt_free(subghz->subghz_keeloq_decrypt);
 
     // Read RAW
     view_dispatcher_remove_view(subghz->view_dispatcher, SubGhzViewIdReadRAW);

@@ -6,6 +6,7 @@ enum SubmenuIndex {
     SubmenuIndexDelete,
     SubmenuIndexSignalSettings,
     SubmenuIndexPsaDecrypt,
+    SubmenuIndexKeeloqDecrypt,
     SubmenuIndexCounterBf
 };
 
@@ -17,16 +18,15 @@ void subghz_scene_saved_menu_submenu_callback(void* context, uint32_t index) {
 void subghz_scene_saved_menu_on_enter(void* context) {
     SubGhz* subghz = context;
 
-    // Check protocol type for conditional menu items
     FlipperFormat* fff = subghz_txrx_get_fff_data(subghz->txrx);
     bool is_psa_encrypted = false;
+    bool is_keeloq_unknown = false;
     bool has_counter = false;
     if(fff) {
         FuriString* proto = furi_string_alloc();
         flipper_format_rewind(fff);
         if(flipper_format_read_string(fff, "Protocol", proto)) {
             if(furi_string_equal_str(proto, "PSA GROUP")) {
-                // Check if Type field is missing or zero (not yet decrypted)
                 FuriString* type_str = furi_string_alloc();
                 flipper_format_rewind(fff);
                 if(!flipper_format_read_string(fff, "Type", type_str) ||
@@ -34,12 +34,22 @@ void subghz_scene_saved_menu_on_enter(void* context) {
                     is_psa_encrypted = true;
                 }
                 furi_string_free(type_str);
+            } else if(furi_string_equal_str(proto, "KeeLoq")) {
+                FuriString* mf_str = furi_string_alloc();
+                flipper_format_rewind(fff);
+                if(flipper_format_read_string(fff, "Manufacture", mf_str)) {
+                    if(furi_string_equal_str(mf_str, "Unknown")) {
+                        is_keeloq_unknown = true;
+                    }
+                } else {
+                    is_keeloq_unknown = true;
+                }
+                furi_string_free(mf_str);
             }
         }
         furi_string_free(proto);
     }
 
-    // Check if protocol has a Cnt field (supports counter bruteforce)
     if(fff) {
         uint32_t cnt_tmp = 0;
         flipper_format_rewind(fff);
@@ -82,6 +92,14 @@ void subghz_scene_saved_menu_on_enter(void* context) {
             subghz->submenu,
             "PSA Decrypt",
             SubmenuIndexPsaDecrypt,
+            subghz_scene_saved_menu_submenu_callback,
+            subghz);
+    }
+    if(is_keeloq_unknown) {
+        submenu_add_item(
+            subghz->submenu,
+            "KeeLoq BF (Phone)",
+            SubmenuIndexKeeloqDecrypt,
             subghz_scene_saved_menu_submenu_callback,
             subghz);
     }
@@ -129,6 +147,11 @@ bool subghz_scene_saved_menu_on_event(void* context, SceneManagerEvent event) {
             scene_manager_set_scene_state(
                 subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexPsaDecrypt);
             scene_manager_next_scene(subghz->scene_manager, SubGhzScenePsaDecrypt);
+            return true;
+        } else if(event.event == SubmenuIndexKeeloqDecrypt) {
+            scene_manager_set_scene_state(
+                subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexKeeloqDecrypt);
+            scene_manager_next_scene(subghz->scene_manager, SubGhzSceneKeeloqDecrypt);
             return true;
         } else if(event.event == SubmenuIndexCounterBf) {
             scene_manager_set_scene_state(
