@@ -5,9 +5,10 @@
 #define TAG "SubGhzCounterBf"
 
 // How many ticks to wait between transmissions (1 tick ~100ms)
-#define COUNTER_BF_TX_INTERVAL_TICKS 3
+#define COUNTER_BF_TX_INTERVAL_TICKS 5
 
 typedef enum {
+    CounterBfStateWarning,
     CounterBfStateIdle,
     CounterBfStateRunning,
     CounterBfStateStopped,
@@ -22,8 +23,16 @@ typedef struct {
     uint32_t tick_wait;
 } CounterBfContext;
 
-#define CounterBfEventStart (0xC0)
-#define CounterBfEventStop  (0xC1)
+#define CounterBfEventStart     (0xC0)
+#define CounterBfEventStop      (0xC1)
+#define CounterBfEventWarningOk (0xC2)
+
+static void counter_bf_warning_callback(GuiButtonType result, InputType type, void* context) {
+    SubGhz* subghz = context;
+    if(result == GuiButtonTypeCenter && type == InputTypeShort) {
+        view_dispatcher_send_custom_event(subghz->view_dispatcher, CounterBfEventWarningOk);
+    }
+}
 
 static void counter_bf_widget_callback(GuiButtonType result, InputType type, void* context) {
     SubGhz* subghz = context;
@@ -32,12 +41,29 @@ static void counter_bf_widget_callback(GuiButtonType result, InputType type, voi
     }
 }
 
+static void counter_bf_draw_warning(SubGhz* subghz) {
+    widget_reset(subghz->widget);
+    widget_add_string_multiline_element(
+        subghz->widget,
+        64,
+        20,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        "WARNING:\nThis may desync\nyour fob!");
+    widget_add_button_element(
+        subghz->widget,
+        GuiButtonTypeCenter,
+        "OK",
+        counter_bf_warning_callback,
+        subghz);
+}
+
 static void counter_bf_draw(SubGhz* subghz, CounterBfContext* ctx) {
     widget_reset(subghz->widget);
     FuriString* str = furi_string_alloc();
     furi_string_printf(
         str,
-        "WARNING: THIS MAY BE DESYNC YOUR FOB\n"
         "Counter BruteForce\n"
         "Cnt: 0x%08lX\n"
         "Start: 0x%08lX\n"
@@ -58,9 +84,6 @@ static void counter_bf_draw(SubGhz* subghz, CounterBfContext* ctx) {
 }
 
 static void counter_bf_save(SubGhz* subghz, CounterBfContext* ctx) {
-    // Escribir el Cnt final directamente en el archivo .sub en disco.
-    // No usar subghz_save_protocol_to_file() porque ese serializa el estado
-    // actual del encoder (que puede tener el Cnt ya incrementado internamente).
     Storage* storage = furi_record_open(RECORD_STORAGE);
     FlipperFormat* file_fff = flipper_format_buffered_file_alloc(storage);
     if(flipper_format_buffered_file_open_existing(
@@ -84,7 +107,6 @@ static void counter_bf_send(SubGhz* subghz, CounterBfContext* ctx) {
     flipper_format_rewind(fff);
     flipper_format_update_uint32(fff, "Repeat", &repeat, 1);
 
-    // Actualizar Cnt DESPUES de Repeat (update es secuencial en el buffer)
     flipper_format_rewind(fff);
     flipper_format_update_uint32(fff, "Cnt", &ctx->current_cnt, 1);
 
@@ -99,12 +121,9 @@ void subghz_scene_counter_bf_on_enter(void* context) {
 
     CounterBfContext* ctx = malloc(sizeof(CounterBfContext));
     memset(ctx, 0, sizeof(CounterBfContext));
-    ctx->state = CounterBfStateIdle;
+    ctx->state = CounterBfStateWarning;
     ctx->step = 1;
 
-    // FIX: Leer el Cnt DIRECTAMENTE del archivo en disco con un FlipperFormat
-    // propio, completamente separado del fff en memoria (que puede tener el Cnt
-    // modificado por TXs previas y no refleja el estado real del .sub).
     {
         Storage* storage = furi_record_open(RECORD_STORAGE);
         FlipperFormat* file_fff = flipper_format_buffered_file_alloc(storage);
@@ -127,14 +146,11 @@ void subghz_scene_counter_bf_on_enter(void* context) {
     scene_manager_set_scene_state(
         subghz->scene_manager, SubGhzSceneCounterBf, (uint32_t)(uintptr_t)ctx);
 
-    // Deshabilitar auto-increment del protocolo para controlar el Cnt manualmente
     furi_hal_subghz_set_rolling_counter_mult(0);
 
-    // Recargar el protocolo DESPUES de haber leído el Cnt del disco,
-    // para preparar el fff para TX sin que pise nuestro valor leído.
     subghz_key_load(subghz, furi_string_get_cstr(subghz->file_path), false);
 
-    counter_bf_draw(subghz, ctx);
+    counter_bf_draw_warning(subghz);
     view_dispatcher_switch_to_view(subghz->view_dispatcher, SubGhzViewIdWidget);
 }
 
@@ -145,15 +161,21 @@ bool subghz_scene_counter_bf_on_event(void* context, SceneManagerEvent event) {
     if(!ctx) return false;
 
     if(event.type == SceneManagerEventTypeCustom) {
+        if(event.event == CounterBfEventWarningOk) {
+            ctx->state = CounterBfStateIdle;
+            counter_bf_draw(subghz, ctx);
+            return true;
+        }
+
         if(event.event == CounterBfEventStart) {
+            if(ctx->state == CounterBfStateWarning) return true;
+
             if(ctx->state != CounterBfStateRunning) {
                 ctx->state = CounterBfStateRunning;
                 ctx->tick_wait = 0;
                 subghz->state_notifications = SubGhzNotificationStateTx;
                 counter_bf_send(subghz, ctx);
             } else {
-                // FIX 2: Al detener, guardar el contador actual en el .sub
-                // para que al volver a emular manualmente continúe desde acá.
                 ctx->state = CounterBfStateStopped;
                 subghz_txrx_stop(subghz->txrx);
                 subghz->state_notifications = SubGhzNotificationStateIDLE;
@@ -175,12 +197,16 @@ bool subghz_scene_counter_bf_on_event(void* context, SceneManagerEvent event) {
         }
         return true;
     } else if(event.type == SceneManagerEventTypeBack) {
+        if(ctx->state == CounterBfStateWarning) {
+            furi_hal_subghz_set_rolling_counter_mult(1);
+            free(ctx);
+            scene_manager_previous_scene(subghz->scene_manager);
+            return true;
+        }
+
         subghz_txrx_stop(subghz->txrx);
         subghz->state_notifications = SubGhzNotificationStateIDLE;
-
-        // FIX 2 (también en Back): guardar siempre al salir
         counter_bf_save(subghz, ctx);
-
         furi_hal_subghz_set_rolling_counter_mult(1);
         free(ctx);
         scene_manager_previous_scene(subghz->scene_manager);
