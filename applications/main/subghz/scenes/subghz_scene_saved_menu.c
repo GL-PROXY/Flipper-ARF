@@ -2,12 +2,11 @@
 
 enum SubmenuIndex {
     SubmenuIndexEmulate,
+    SubmenuIndexPsaDecrypt,
     SubmenuIndexEdit,
     SubmenuIndexDelete,
     SubmenuIndexSignalSettings,
-    SubmenuIndexPsaDecrypt,
-    SubmenuIndexCounterBf,
-    SubmenuIndexKlBfCleanup,
+    SubmenuIndexCounterBf
 };
 
 void subghz_scene_saved_menu_submenu_callback(void* context, uint32_t index) {
@@ -46,24 +45,23 @@ void subghz_scene_saved_menu_on_enter(void* context) {
         }
     }
 
-    bool has_bf_keys = false;
-    if(fff) {
-        FuriString* mfg = furi_string_alloc();
-        flipper_format_rewind(fff);
-        if(flipper_format_read_string(fff, "Manufacture", mfg)) {
-            if(furi_string_start_with_str(mfg, "BF_")) {
-                has_bf_keys = true;
-            }
-        }
-        furi_string_free(mfg);
+    if(!is_psa_encrypted) {
+        submenu_add_item(
+            subghz->submenu,
+            "Emulate",
+            SubmenuIndexEmulate,
+            subghz_scene_saved_menu_submenu_callback,
+            subghz);
     }
 
-    submenu_add_item(
-        subghz->submenu,
-        "Emulate",
-        SubmenuIndexEmulate,
-        subghz_scene_saved_menu_submenu_callback,
-        subghz);
+    if(is_psa_encrypted) {
+        submenu_add_item(
+            subghz->submenu,
+            "PSA Decrypt",
+            SubmenuIndexPsaDecrypt,
+            subghz_scene_saved_menu_submenu_callback,
+            subghz);
+    }
 
     submenu_add_item(
         subghz->submenu,
@@ -86,28 +84,13 @@ void subghz_scene_saved_menu_on_enter(void* context) {
             SubmenuIndexSignalSettings,
             subghz_scene_saved_menu_submenu_callback,
             subghz);
-    };
-    if(is_psa_encrypted) {
-        submenu_add_item(
-            subghz->submenu,
-            "PSA Decrypt",
-            SubmenuIndexPsaDecrypt,
-            subghz_scene_saved_menu_submenu_callback,
-            subghz);
     }
+
     if(has_counter) {
         submenu_add_item(
             subghz->submenu,
             "Counter BruteForce",
             SubmenuIndexCounterBf,
-            subghz_scene_saved_menu_submenu_callback,
-            subghz);
-    }
-    if(has_bf_keys) {
-        submenu_add_item(
-            subghz->submenu,
-            "Clean BF Keys",
-            SubmenuIndexKlBfCleanup,
             subghz_scene_saved_menu_submenu_callback,
             subghz);
     }
@@ -128,6 +111,11 @@ bool subghz_scene_saved_menu_on_event(void* context, SceneManagerEvent event) {
                 subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexEmulate);
             scene_manager_next_scene(subghz->scene_manager, SubGhzSceneTransmitter);
             return true;
+        } else if(event.event == SubmenuIndexPsaDecrypt) {
+            scene_manager_set_scene_state(
+                subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexPsaDecrypt);
+            scene_manager_next_scene(subghz->scene_manager, SubGhzScenePsaDecrypt);
+            return true;
         } else if(event.event == SubmenuIndexDelete) {
             scene_manager_set_scene_state(
                 subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexDelete);
@@ -143,20 +131,10 @@ bool subghz_scene_saved_menu_on_event(void* context, SceneManagerEvent event) {
                 subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexSignalSettings);
             scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSignalSettings);
             return true;
-        } else if(event.event == SubmenuIndexPsaDecrypt) {
-            scene_manager_set_scene_state(
-                subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexPsaDecrypt);
-            scene_manager_next_scene(subghz->scene_manager, SubGhzScenePsaDecrypt);
-            return true;
         } else if(event.event == SubmenuIndexCounterBf) {
             scene_manager_set_scene_state(
                 subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexCounterBf);
             scene_manager_next_scene(subghz->scene_manager, SubGhzSceneCounterBf);
-            return true;
-        } else if(event.event == SubmenuIndexKlBfCleanup) {
-            scene_manager_set_scene_state(
-                subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexKlBfCleanup);
-            scene_manager_next_scene(subghz->scene_manager, SubGhzSceneKlBfCleanup);
             return true;
         }
     }
