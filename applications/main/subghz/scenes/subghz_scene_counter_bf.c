@@ -65,11 +65,11 @@ static void counter_bf_draw(SubGhz* subghz, CounterBfContext* ctx) {
     furi_string_printf(
         str,
         "Counter BruteForce\n"
-        "Cnt: 0x%08lX\n"
-        "Start: 0x%08lX\n"
+        "Cnt: 0x%06lX\n"
+        "Start: 0x%06lX\n"
         "Sent: %lu",
-        ctx->current_cnt,
-        ctx->start_cnt,
+        ctx->current_cnt & 0xFFFFFF,
+        ctx->start_cnt & 0xFFFFFF,
         ctx->packets_sent);
     widget_add_string_multiline_element(
         subghz->widget, 0, 0, AlignLeft, AlignTop, FontSecondary, furi_string_get_cstr(str));
@@ -88,7 +88,8 @@ static void counter_bf_save(SubGhz* subghz, CounterBfContext* ctx) {
     FlipperFormat* file_fff = flipper_format_buffered_file_alloc(storage);
     if(flipper_format_buffered_file_open_existing(
            file_fff, furi_string_get_cstr(subghz->file_path))) {
-        if(!flipper_format_update_uint32(file_fff, "Cnt", &ctx->current_cnt, 1)) {
+        uint32_t cnt = ctx->current_cnt & 0xFFFFFF;
+        if(!flipper_format_update_uint32(file_fff, "Cnt", &cnt, 1)) {
             FURI_LOG_E(TAG, "Failed to update Cnt in .sub file");
         }
     } else {
@@ -101,14 +102,14 @@ static void counter_bf_save(SubGhz* subghz, CounterBfContext* ctx) {
 static void counter_bf_send(SubGhz* subghz, CounterBfContext* ctx) {
     subghz_txrx_stop(subghz->txrx);
 
-    FlipperFormat* fff = subghz_txrx_get_fff_data(subghz->txrx);
+    uint32_t delta = (ctx->current_cnt - ctx->start_cnt) & 0xFFFFFF;
+    furi_hal_subghz_set_rolling_counter_mult((int32_t)delta);
+    subghz_block_generic_global_counter_override_set(ctx->current_cnt & 0xFFFFFF);
 
+    FlipperFormat* fff = subghz_txrx_get_fff_data(subghz->txrx);
     uint32_t repeat = 20;
     flipper_format_rewind(fff);
     flipper_format_update_uint32(fff, "Repeat", &repeat, 1);
-
-    flipper_format_rewind(fff);
-    flipper_format_update_uint32(fff, "Cnt", &ctx->current_cnt, 1);
 
     subghz_tx_start(subghz, fff);
 
@@ -123,32 +124,34 @@ void subghz_scene_counter_bf_on_enter(void* context) {
     memset(ctx, 0, sizeof(CounterBfContext));
     ctx->state = CounterBfStateWarning;
     ctx->step = 1;
+    furi_hal_subghz_set_rolling_counter_mult(0);
+    subghz_key_load(subghz, furi_string_get_cstr(subghz->file_path), false);
 
     {
-        Storage* storage = furi_record_open(RECORD_STORAGE);
-        FlipperFormat* file_fff = flipper_format_buffered_file_alloc(storage);
-        if(flipper_format_buffered_file_open_existing(
-               file_fff, furi_string_get_cstr(subghz->file_path))) {
-            uint32_t cnt = 0;
-            if(flipper_format_read_uint32(file_fff, "Cnt", &cnt, 1)) {
-                ctx->current_cnt = cnt;
-                ctx->start_cnt = cnt;
-            } else {
-                FURI_LOG_W(TAG, "Cnt field not found in file");
-            }
+        FlipperFormat* fff = subghz_txrx_get_fff_data(subghz->txrx);
+        flipper_format_rewind(fff);
+        uint32_t cnt = 0;
+        if(flipper_format_read_uint32(fff, "Cnt", &cnt, 1)) {
+            ctx->current_cnt = cnt & 0xFFFFFF;
+            ctx->start_cnt   = cnt & 0xFFFFFF;
         } else {
-            FURI_LOG_E(TAG, "Failed to open .sub file for Cnt read");
+            FURI_LOG_W(TAG, "Cnt not in fff after key_load, reading from disk");
+            Storage* storage = furi_record_open(RECORD_STORAGE);
+            FlipperFormat* file_fff = flipper_format_buffered_file_alloc(storage);
+            if(flipper_format_buffered_file_open_existing(
+                   file_fff, furi_string_get_cstr(subghz->file_path))) {
+                if(flipper_format_read_uint32(file_fff, "Cnt", &cnt, 1)) {
+                    ctx->current_cnt = cnt & 0xFFFFFF;
+                    ctx->start_cnt   = cnt & 0xFFFFFF;
+                }
+            }
+            flipper_format_free(file_fff);
+            furi_record_close(RECORD_STORAGE);
         }
-        flipper_format_free(file_fff);
-        furi_record_close(RECORD_STORAGE);
     }
 
     scene_manager_set_scene_state(
         subghz->scene_manager, SubGhzSceneCounterBf, (uint32_t)(uintptr_t)ctx);
-
-    furi_hal_subghz_set_rolling_counter_mult(0);
-
-    subghz_key_load(subghz, furi_string_get_cstr(subghz->file_path), false);
 
     counter_bf_draw_warning(subghz);
     view_dispatcher_switch_to_view(subghz->view_dispatcher, SubGhzViewIdWidget);
@@ -190,8 +193,9 @@ bool subghz_scene_counter_bf_on_event(void* context, SceneManagerEvent event) {
             if(ctx->tick_wait > 0) {
                 ctx->tick_wait--;
             } else {
-                ctx->current_cnt += ctx->step;
+                ctx->current_cnt = (ctx->current_cnt + ctx->step) & 0xFFFFFF;
                 counter_bf_send(subghz, ctx);
+                counter_bf_save(subghz, ctx);
                 counter_bf_draw(subghz, ctx);
             }
         }
