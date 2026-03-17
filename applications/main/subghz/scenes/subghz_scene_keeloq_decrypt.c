@@ -27,8 +27,10 @@ typedef struct {
 
     uint32_t hop2;
 
+    uint32_t candidate_count;
     uint64_t recovered_mfkey;
     uint16_t recovered_type;
+    uint32_t recovered_cnt;
 
     bool ble_offload;
 } KlDecryptCtx;
@@ -61,37 +63,59 @@ static void kl_ble_data_received(uint8_t* data, uint16_t size, void* context) {
         memcpy(&cnt, data + 18, 4);
         memcpy(&elapsed_ms, data + 22, 4);
 
-        if(found) {
+        if(found == 1) {
             uint16_t learn_type = (size >= 27) ? data[26] : 6;
 
-            furi_string_printf(
-                ctx->result,
-                "Key FOUND!\n"
-                "MfKey:%08lX%08lX\n"
-                "DevKey:%08lX%08lX\n"
-                "Cnt:%04lX Sn:%07lX\n"
-                "Saved to user keys",
-                (uint32_t)(mfkey >> 32), (uint32_t)(mfkey & 0xFFFFFFFF),
-                (uint32_t)(devkey >> 32), (uint32_t)(devkey & 0xFFFFFFFF),
-                cnt, ctx->serial);
-
-            FlipperFormat* fff = subghz_txrx_get_fff_data(ctx->subghz->txrx);
-            flipper_format_rewind(fff);
-
-            char mf_str[20];
-            snprintf(mf_str, sizeof(mf_str), "BF_%07lX", ctx->serial);
-            flipper_format_insert_or_update_string_cstr(fff, "Manufacture", mf_str);
-
-            uint32_t cnt_val = cnt;
-            flipper_format_rewind(fff);
-            flipper_format_insert_or_update_uint32(fff, "Cnt", &cnt_val, 1);
-
+            ctx->candidate_count++;
             ctx->recovered_mfkey = mfkey;
             ctx->recovered_type = learn_type;
-            ctx->success = true;
-        }
+            ctx->recovered_cnt = cnt;
 
-        view_dispatcher_send_custom_event(ctx->subghz->view_dispatcher, KL_DECRYPT_EVENT_DONE);
+            subghz_view_keeloq_decrypt_update_candidates(
+                ctx->subghz->subghz_keeloq_decrypt, ctx->candidate_count);
+
+            if(!ctx->subghz->keeloq_keys_manager) {
+                ctx->subghz->keeloq_keys_manager = subghz_keeloq_keys_alloc();
+            }
+            char key_name[32];
+            snprintf(key_name, sizeof(key_name), "BF_%07lX_%lu", ctx->serial, ctx->candidate_count);
+            subghz_keeloq_keys_add(
+                ctx->subghz->keeloq_keys_manager,
+                mfkey,
+                learn_type,
+                key_name);
+            subghz_keeloq_keys_save(ctx->subghz->keeloq_keys_manager);
+
+        } else if(found == 2) {
+            ctx->success = (ctx->candidate_count > 0);
+
+            if(ctx->candidate_count > 0) {
+                furi_string_printf(
+                    ctx->result,
+                    "Found %lu candidate(s)\n"
+                    "Last: %08lX%08lX\n"
+                    "Type:%u Cnt:%04lX\n"
+                    "Saved to user keys",
+                    ctx->candidate_count,
+                    (uint32_t)(ctx->recovered_mfkey >> 32),
+                    (uint32_t)(ctx->recovered_mfkey & 0xFFFFFFFF),
+                    ctx->recovered_type,
+                    ctx->recovered_cnt);
+
+                FlipperFormat* fff = subghz_txrx_get_fff_data(ctx->subghz->txrx);
+                flipper_format_rewind(fff);
+
+                char mf_str[20];
+                snprintf(mf_str, sizeof(mf_str), "BF_%07lX", ctx->serial);
+                flipper_format_insert_or_update_string_cstr(fff, "Manufacture", mf_str);
+
+                uint32_t cnt_val = ctx->recovered_cnt;
+                flipper_format_rewind(fff);
+                flipper_format_insert_or_update_uint32(fff, "Cnt", &cnt_val, 1);
+            }
+
+            view_dispatcher_send_custom_event(ctx->subghz->view_dispatcher, KL_DECRYPT_EVENT_DONE);
+        }
     }
 }
 
@@ -114,7 +138,7 @@ static bool kl_ble_start_offload(KlDecryptCtx* ctx) {
 
     uint8_t req[18];
     req[0] = KL_MSG_BF_REQUEST;
-    req[1] = 0;
+    req[1] = ctx->subghz->keeloq_bf2.learn_type;
     memcpy(req + 2, &ctx->fix, 4);
     memcpy(req + 6, &ctx->hop, 4);
     memcpy(req + 10, &ctx->hop2, 4);
@@ -199,18 +223,6 @@ bool subghz_scene_keeloq_decrypt_on_event(void* context, SceneManagerEvent event
                     subghz,
                     subghz_txrx_get_fff_data(subghz->txrx),
                     furi_string_get_cstr(subghz->file_path));
-
-                if(!subghz->keeloq_keys_manager) {
-                    subghz->keeloq_keys_manager = subghz_keeloq_keys_alloc();
-                }
-                char key_name[24];
-                snprintf(key_name, sizeof(key_name), "BF_%07lX", ctx->serial);
-                subghz_keeloq_keys_add(
-                    subghz->keeloq_keys_manager,
-                    ctx->recovered_mfkey,
-                    ctx->recovered_type,
-                    key_name);
-                subghz_keeloq_keys_save(subghz->keeloq_keys_manager);
 
                 subghz_view_keeloq_decrypt_set_result(
                     subghz->subghz_keeloq_decrypt, true, furi_string_get_cstr(ctx->result));

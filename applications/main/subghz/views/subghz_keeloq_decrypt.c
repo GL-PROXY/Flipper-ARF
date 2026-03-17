@@ -19,6 +19,7 @@ typedef struct {
     uint32_t eta_sec;
     bool done;
     bool success;
+    uint32_t candidates;
     FuriString* result_str;
     char status_line[40];
 } SubGhzKeeloqDecryptModel;
@@ -72,15 +73,21 @@ static void subghz_view_keeloq_decrypt_draw(Canvas* canvas, void* _model) {
         }
         canvas_draw_str(canvas, 2, 48, speed_str);
 
-        char elapsed_str[24];
-        uint32_t el_m = model->elapsed_sec / 60;
-        uint32_t el_s = model->elapsed_sec % 60;
-        if(el_m > 0) {
-            snprintf(elapsed_str, sizeof(elapsed_str), "Elapsed: %lum %lus", el_m, el_s);
+        if(model->candidates > 0) {
+            char cand_str[32];
+            snprintf(cand_str, sizeof(cand_str), "Candidates: %lu", model->candidates);
+            canvas_draw_str(canvas, 2, 58, cand_str);
         } else {
-            snprintf(elapsed_str, sizeof(elapsed_str), "Elapsed: %lus", el_s);
+            char elapsed_str[24];
+            uint32_t el_m = model->elapsed_sec / 60;
+            uint32_t el_s = model->elapsed_sec % 60;
+            if(el_m > 0) {
+                snprintf(elapsed_str, sizeof(elapsed_str), "Elapsed: %lum %lus", el_m, el_s);
+            } else {
+                snprintf(elapsed_str, sizeof(elapsed_str), "Elapsed: %lus", el_s);
+            }
+            canvas_draw_str(canvas, 2, 58, elapsed_str);
         }
-        canvas_draw_str(canvas, 2, 58, elapsed_str);
 
         canvas_draw_str_aligned(canvas, 126, 64, AlignRight, AlignBottom, "Hold BACK");
     } else {
@@ -124,6 +131,7 @@ SubGhzViewKeeloqDecrypt* subghz_view_keeloq_decrypt_alloc(void) {
             model->eta_sec = 0;
             model->done = false;
             model->success = false;
+            model->candidates = 0;
         },
         false);
 
@@ -205,6 +213,7 @@ void subghz_view_keeloq_decrypt_reset(SubGhzViewKeeloqDecrypt* instance) {
             model->eta_sec = 0;
             model->done = false;
             model->success = false;
+            model->candidates = 0;
             furi_string_reset(model->result_str);
             model->status_line[0] = '\0';
         },
@@ -223,5 +232,15 @@ void subghz_view_keeloq_decrypt_set_status(SubGhzViewKeeloqDecrypt* instance, co
                 model->status_line[0] = '\0';
             }
         },
+        true);
+}
+
+void subghz_view_keeloq_decrypt_update_candidates(
+    SubGhzViewKeeloqDecrypt* instance, uint32_t count) {
+    furi_check(instance);
+    with_view_model(
+        instance->view,
+        SubGhzKeeloqDecryptModel * model,
+        { model->candidates = count; },
         true);
 }

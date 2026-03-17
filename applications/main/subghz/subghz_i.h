@@ -121,6 +121,7 @@ struct SubGhz {
         bool sig2_loaded;
         FuriString* sig1_path;
         FuriString* sig2_path;
+        uint8_t learn_type;
     } keeloq_bf2;
 };
 

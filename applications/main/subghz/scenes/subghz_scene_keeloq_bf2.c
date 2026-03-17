@@ -5,8 +5,17 @@
 enum {
     KlBf2IndexLoadSig1,
     KlBf2IndexLoadSig2,
+    KlBf2IndexType,
     KlBf2IndexStartBf,
 };
+
+static const char* kl_bf2_type_labels[] = {
+    "Type: Auto (6>7>8)",
+    "Type: 6 (Serial 1)",
+    "Type: 7 (Serial 2)",
+    "Type: 8 (Serial 3)",
+};
+static const uint8_t kl_bf2_type_values[] = {0, 6, 7, 8};
 
 static bool kl_bf2_extract_key(SubGhz* subghz, uint32_t* out_fix, uint32_t* out_hop) {
     FlipperFormat* fff = subghz_txrx_get_fff_data(subghz->txrx);
@@ -88,6 +97,17 @@ static void kl_bf2_rebuild_menu(SubGhz* subghz) {
         subghz->submenu, label2, KlBf2IndexLoadSig2,
         kl_bf2_submenu_callback, subghz);
 
+    int type_idx = 0;
+    for(int i = 0; i < 4; i++) {
+        if(kl_bf2_type_values[i] == subghz->keeloq_bf2.learn_type) {
+            type_idx = i;
+            break;
+        }
+    }
+    submenu_add_item(
+        subghz->submenu, kl_bf2_type_labels[type_idx], KlBf2IndexType,
+        kl_bf2_submenu_callback, subghz);
+
     if(subghz->keeloq_bf2.sig1_loaded && subghz->keeloq_bf2.sig2_loaded) {
         submenu_add_item(
             subghz->submenu, "Start BF", KlBf2IndexStartBf,
@@ -102,6 +122,7 @@ void subghz_scene_keeloq_bf2_on_enter(void* context) {
 
     subghz->keeloq_bf2.sig1_loaded = false;
     subghz->keeloq_bf2.sig2_loaded = false;
+    subghz->keeloq_bf2.learn_type = 0;
 
     kl_bf2_rebuild_menu(subghz);
 }
@@ -191,6 +212,16 @@ bool subghz_scene_keeloq_bf2_on_event(void* context, SceneManagerEvent event) {
                 furi_string_set(subghz->keeloq_bf2.sig2_path, path);
             }
             furi_string_free(path);
+            kl_bf2_rebuild_menu(subghz);
+            return true;
+
+        } else if(event.event == KlBf2IndexType) {
+            uint8_t cur = subghz->keeloq_bf2.learn_type;
+            if(cur == 0) cur = 6;
+            else if(cur == 6) cur = 7;
+            else if(cur == 7) cur = 8;
+            else cur = 0;
+            subghz->keeloq_bf2.learn_type = cur;
             kl_bf2_rebuild_menu(subghz);
             return true;
 

@@ -6,7 +6,8 @@ enum SubmenuIndex {
     SubmenuIndexDelete,
     SubmenuIndexSignalSettings,
     SubmenuIndexPsaDecrypt,
-    SubmenuIndexCounterBf
+    SubmenuIndexCounterBf,
+    SubmenuIndexKlBfCleanup,
 };
 
 void subghz_scene_saved_menu_submenu_callback(void* context, uint32_t index) {
@@ -43,6 +44,18 @@ void subghz_scene_saved_menu_on_enter(void* context) {
         if(flipper_format_read_uint32(fff, "Cnt", &cnt_tmp, 1)) {
             has_counter = true;
         }
+    }
+
+    bool has_bf_keys = false;
+    if(fff) {
+        FuriString* mfg = furi_string_alloc();
+        flipper_format_rewind(fff);
+        if(flipper_format_read_string(fff, "Manufacture", mfg)) {
+            if(furi_string_start_with_str(mfg, "BF_")) {
+                has_bf_keys = true;
+            }
+        }
+        furi_string_free(mfg);
     }
 
     submenu_add_item(
@@ -90,6 +103,14 @@ void subghz_scene_saved_menu_on_enter(void* context) {
             subghz_scene_saved_menu_submenu_callback,
             subghz);
     }
+    if(has_bf_keys) {
+        submenu_add_item(
+            subghz->submenu,
+            "Clean BF Keys",
+            SubmenuIndexKlBfCleanup,
+            subghz_scene_saved_menu_submenu_callback,
+            subghz);
+    }
 
     submenu_set_selected_item(
         subghz->submenu,
@@ -131,6 +152,11 @@ bool subghz_scene_saved_menu_on_event(void* context, SceneManagerEvent event) {
             scene_manager_set_scene_state(
                 subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexCounterBf);
             scene_manager_next_scene(subghz->scene_manager, SubGhzSceneCounterBf);
+            return true;
+        } else if(event.event == SubmenuIndexKlBfCleanup) {
+            scene_manager_set_scene_state(
+                subghz->scene_manager, SubGhzSceneSavedMenu, SubmenuIndexKlBfCleanup);
+            scene_manager_next_scene(subghz->scene_manager, SubGhzSceneKlBfCleanup);
             return true;
         }
     }

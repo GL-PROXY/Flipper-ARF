@@ -32,3 +32,6 @@ void subghz_view_keeloq_decrypt_set_result(
 void subghz_view_keeloq_decrypt_reset(SubGhzViewKeeloqDecrypt* instance);
 
 void subghz_view_keeloq_decrypt_set_status(SubGhzViewKeeloqDecrypt* instance, const char* status);
+
+void subghz_view_keeloq_decrypt_update_candidates(
+    SubGhzViewKeeloqDecrypt* instance, uint32_t count);
