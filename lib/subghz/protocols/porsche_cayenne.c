@@ -472,7 +472,7 @@ bool subghz_protocol_porsche_cayenne_create_data(
     instance->generic.cnt = (uint16_t)cnt;
     instance->generic.data_count_bit = 64;
     subghz_custom_btn_set_original(btn);
-    subghz_custom_btn_set_max(5);
+    subghz_custom_btn_set_max(4);
     instance->encoder.repeat = 1;
     instance->encoder.is_running = false;
     porsche_cayenne_build_upload(instance);

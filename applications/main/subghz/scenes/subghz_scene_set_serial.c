@@ -67,8 +67,11 @@ void subghz_scene_set_serial_on_enter(void* context) {
         byte_count = sizeof(subghz->gen_info->phoenix_v2.serial);
         break;
     case GenPorscheCayenne:
-        byte_ptr = (uint8_t*)&subghz->gen_info->porsche_cayenne.serial;
-        byte_count = sizeof(subghz->gen_info->porsche_cayenne.serial);
+        // bswap manually so generic bswap (4-byte only) is skipped
+        subghz->gen_info->porsche_cayenne.serial =
+            __bswap32(subghz->gen_info->porsche_cayenne.serial);
+        byte_ptr = (uint8_t*)&subghz->gen_info->porsche_cayenne.serial + 1;
+        byte_count = 3;
         break;
     case GenVAG:
         byte_ptr = (uint8_t*)&subghz->gen_info->vag.serial;
@@ -95,6 +98,8 @@ void subghz_scene_set_serial_on_enter(void* context) {
     ByteInput* byte_input = subghz->byte_input;
     if(subghz->gen_info->type == GenVAG) {
         byte_input_set_header_text(byte_input, "VAG Serial (28-bit)\nMax: 0FFFFFFF");
+    } else if(subghz->gen_info->type == GenPorscheCayenne) {
+        byte_input_set_header_text(byte_input, "Porsche Serial (24-bit)\nMax: 00FFFFFF");
     } else {
         byte_input_set_header_text(byte_input, "Enter SERIAL in hex");
     }
@@ -198,8 +203,17 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
             case GenPhoenixV2:
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
-            case GenPorscheCayenne:
             case GenFordV0:
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
+                break;
+            case GenPorscheCayenne:
+                if(subghz->gen_info->porsche_cayenne.serial > 0x00FFFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Serial too large!\nMax: 0x00FFFFFF\n(24-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
             case GenVAG:

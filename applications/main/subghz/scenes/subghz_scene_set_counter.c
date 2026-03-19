@@ -99,6 +99,8 @@ void subghz_scene_set_counter_on_enter(void* context) {
     ByteInput* byte_input = subghz->byte_input;
     if(subghz->gen_info->type == GenVAG) {
         byte_input_set_header_text(byte_input, "VAG Counter (24-bit)\nTop byte ignored!\nStart low e.g. 0001");
+    } else if(subghz->gen_info->type == GenPorscheCayenne) {
+        byte_input_set_header_text(byte_input, "Porsche Counter\n(16-bit) e.g. 0001");
     } else {
         byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
     }
