@@ -97,7 +97,7 @@ void subghz_scene_set_serial_on_enter(void* context) {
     // Setup view
     ByteInput* byte_input = subghz->byte_input;
     if(subghz->gen_info->type == GenVAG) {
-        byte_input_set_header_text(byte_input, "VAG Serial (28-bit)\nMax: 0FFFFFFF");
+        byte_input_set_header_text(byte_input, "VAG Serial (28-bit)\nTop nibble must be 0");
     } else if(subghz->gen_info->type == GenPorscheCayenne) {
         byte_input_set_header_text(byte_input, "Porsche Serial (24-bit)\nMax: 00FFFFFF");
     } else {
@@ -204,6 +204,13 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
             case GenFordV0:
+                if(subghz->gen_info->ford_v0.serial > 0x0FFFFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Serial too large!\nMax: 0x0FFFFFFF\n(28-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
             case GenPorscheCayenne:

@@ -87,6 +87,8 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "VAG Button (1 byte):\n10=Unlock 20=Lock\n40=Trunk  80=Panic");
     } else if(subghz->gen_info->type == GenPorscheCayenne) {
         byte_input_set_header_text(byte_input, "Porsche Btn:\n01=Lock 02=Unlock\n04=Trunk 08=Open");
+    } else if(subghz->gen_info->type == GenFordV0) {
+        byte_input_set_header_text(byte_input, "Ford Btn:\n01=Lock 02=Unlock\n04=Boot/Trunk");
     } else {
         byte_input_set_header_text(byte_input, "Enter BUTTON in hex");
     }
@@ -117,9 +119,18 @@ bool subghz_scene_set_button_on_event(void* context, SceneManagerEvent event) {
             case GenJarolift:
             case GenNiceFlorS:
             case GenSecPlus2:
-            case GenFordV0:
+            case GenFordV0: {
+                uint8_t fbtn = subghz->gen_info->ford_v0.btn;
+                if(fbtn != 0x01 && fbtn != 0x02 && fbtn != 0x04) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Invalid Button!\n01=Lock 02=Unlock\n04=Boot/Trunk");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
+            }
             case GenPorscheCayenne: {
                 uint8_t pbtn = subghz->gen_info->porsche_cayenne.btn;
                 if(pbtn != 0x01 && pbtn != 0x02 && pbtn != 0x04 && pbtn != 0x08) {

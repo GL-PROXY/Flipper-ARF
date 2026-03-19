@@ -101,6 +101,8 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "VAG Counter (24-bit)\nTop byte ignored!\nStart low e.g. 0001");
     } else if(subghz->gen_info->type == GenPorscheCayenne) {
         byte_input_set_header_text(byte_input, "Porsche Counter\n(16-bit) e.g. 0001");
+    } else if(subghz->gen_info->type == GenFordV0) {
+        byte_input_set_header_text(byte_input, "Ford Counter (20-bit)\nMax: 000FFFFF");
     } else {
         byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
     }
@@ -284,6 +286,13 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->porsche_cayenne.cnt);
                 break;
             case GenFordV0:
+                if(subghz->gen_info->ford_v0.cnt > 0x000FFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Counter too large!\nMax: 0x000FFFFF\n(20-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
                 generated_protocol = subghz_txrx_gen_ford_v0_protocol(
                     subghz->txrx,
                     subghz->gen_info->mod,

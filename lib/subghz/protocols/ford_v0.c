@@ -327,19 +327,6 @@ static void encode_ford_v0(
     for(int i = 0; i < 8; i++) {
         *key1 = (*key1 << 8) | buf[i];
     }
-
-    FURI_LOG_I(
-        TAG,
-        "Encode: Sn=%08lX Btn=%d Cnt=%05lX BS=%02X",
-        (unsigned long)serial,
-        button,
-        (unsigned long)count,
-        bs);
-    FURI_LOG_I(
-        TAG,
-        "Encode key1: %08lX%08lX",
-        (unsigned long)(*key1 >> 32),
-        (unsigned long)(*key1 & 0xFFFFFFFF));
 }
 
 // =============================================================================
@@ -426,8 +413,6 @@ void* subghz_protocol_encoder_ford_v0_alloc(SubGhzEnvironment* environment) {
     instance->count = 0;
     instance->bs = 0;
     instance->bs_magic = 0;
-
-    FURI_LOG_I(TAG, "Encoder allocated");
     return instance;
 }
 
@@ -446,13 +431,6 @@ static void subghz_protocol_encoder_ford_v0_get_upload(SubGhzProtocolEncoderFord
 
     uint64_t tx_key1 = ~instance->key1;
     uint16_t tx_key2 = ~instance->key2;
-
-    FURI_LOG_I(
-        TAG,
-        "Building upload: key1=%08lX%08lX key2=%04X",
-        (unsigned long)(instance->key1 >> 32),
-        (unsigned long)(instance->key1 & 0xFFFFFFFF),
-        instance->key2);
 
     uint32_t te_short = subghz_protocol_ford_v0_const.te_short;
     uint32_t te_long = subghz_protocol_ford_v0_const.te_long;
@@ -534,8 +512,6 @@ static void subghz_protocol_encoder_ford_v0_get_upload(SubGhzProtocolEncoderFord
 
     instance->encoder.size_upload = index;
     instance->encoder.front = 0;
-
-    FURI_LOG_I(TAG, "Upload built: %d bursts, size=%zu", FORD_V0_TOTAL_BURSTS, index);
 }
 
 SubGhzProtocolStatus
@@ -657,11 +633,6 @@ SubGhzProtocolStatus
         uint8_t calculated_crc = ford_v0_calculate_crc_for_tx(instance->key1, instance->bs);
         instance->key2 = ((uint16_t)instance->bs << 8) | calculated_crc;
 
-        FURI_LOG_I(TAG, "Encoded: Sn=%08lX Btn=%02X Cnt=%05lX BS=%02X CRC=%02X key1=%08lX%08lX",
-            (unsigned long)instance->serial, instance->button,
-            (unsigned long)instance->count, instance->bs, calculated_crc,
-            (unsigned long)(instance->key1 >> 32), (unsigned long)(instance->key1 & 0xFFFFFFFF));
-
         flipper_format_rewind(flipper_format);
         if(!flipper_format_read_uint32(
                flipper_format, "Repeat", (uint32_t*)&instance->encoder.repeat, 1)) {
@@ -680,15 +651,13 @@ SubGhzProtocolStatus
         for(int i = 0; i < 8; i++) {
             key_bytes[i] = (uint8_t)(instance->key1 >> (56 - i * 8));
         }
-        bool key_wr = flipper_format_insert_or_update_hex(flipper_format, "Key", key_bytes, 8);
+        flipper_format_insert_or_update_hex(flipper_format, "Key", key_bytes, 8);
         uint32_t temp = instance->count;
-        bool cnt_wr = flipper_format_insert_or_update_uint32(flipper_format, "Cnt", &temp, 1);
+        flipper_format_insert_or_update_uint32(flipper_format, "Cnt", &temp, 1);
         temp = calculated_crc;
         flipper_format_insert_or_update_uint32(flipper_format, "CRC", &temp, 1);
         temp = instance->bs;
         flipper_format_insert_or_update_uint32(flipper_format, "BS", &temp, 1);
-
-        FURI_LOG_I(TAG, "File updated: Key ok=%d Cnt ok=%d", key_wr, cnt_wr);
 
         instance->encoder.is_running = true;
 
@@ -947,48 +916,36 @@ SubGhzProtocolStatus
     SubGhzProtocolStatus ret = subghz_block_generic_deserialize_check_count_bit(
         &instance->generic, flipper_format, subghz_protocol_ford_v0_const.min_count_bit_for_found);
 
-    FURI_LOG_I(TAG, "Decoder deserialize: generic_ret=%d generic.data=%08lX%08lX",
-        ret,
-        (unsigned long)(instance->generic.data >> 32),
-        (unsigned long)(instance->generic.data & 0xFFFFFFFF));
-
     if(ret == SubGhzProtocolStatusOk) {
         instance->key1 = instance->generic.data;
 
-        flipper_format_rewind(flipper_format);
-
         uint32_t bs_temp = 0;
         uint32_t crc_temp = 0;
+        flipper_format_rewind(flipper_format);
         flipper_format_read_uint32(flipper_format, "BS", &bs_temp, 1);
+        flipper_format_rewind(flipper_format);
         flipper_format_read_uint32(flipper_format, "CRC", &crc_temp, 1);
         instance->key2 = ((bs_temp & 0xFF) << 8) | (crc_temp & 0xFF);
-        FURI_LOG_I(TAG, "Decoder deserialize: BS=0x%02lX CRC=0x%02lX key2=0x%04X", bs_temp, crc_temp, instance->key2);
 
+        flipper_format_rewind(flipper_format);
         flipper_format_read_uint32(flipper_format, "Serial", &instance->serial, 1);
         instance->generic.serial = instance->serial;
 
         uint32_t btn_temp = 0;
+        flipper_format_rewind(flipper_format);
         flipper_format_read_uint32(flipper_format, "Btn", &btn_temp, 1);
         instance->button = (uint8_t)btn_temp;
         instance->generic.btn = instance->button;
 
+        flipper_format_rewind(flipper_format);
         flipper_format_read_uint32(flipper_format, "Cnt", &instance->count, 1);
         instance->generic.cnt = instance->count;
-
-        FURI_LOG_I(TAG, "Decoder deserialize: Sn=0x%08lX Btn=0x%02X Cnt=0x%05lX",
-            (unsigned long)instance->serial,
-            instance->button,
-            (unsigned long)instance->count);
 
         uint32_t bs_magic_temp = 0;
         if(flipper_format_read_uint32(flipper_format, "BSMagic", &bs_magic_temp, 1))
             instance->bs_magic = bs_magic_temp;
         else
             instance->bs_magic = 0x6F;
-        FURI_LOG_I(TAG, "Decoder deserialize: BSMagic=0x%02X key1=%08lX%08lX",
-            instance->bs_magic,
-            (unsigned long)(instance->key1 >> 32),
-            (unsigned long)(instance->key1 & 0xFFFFFFFF));
     }
 
     return ret;
