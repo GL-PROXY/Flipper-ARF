@@ -93,25 +93,25 @@ static const char* submenu_names[SetTypeMAX] = {
     [SetTypeSecPlus_v2_390_00] = "Security+2.0 390MHz",
     [SetTypeSecPlus_v2_433_00] = "Security+2.0 433MHz",
     // --- Car Protocols ---
-    [SetTypeVAGType1_433]       = "VAG VW/Golf 433MHz",
-    [SetTypeVAGType1Old_433]    = "VAG VW Old 433MHz",
-    [SetTypeVAGType2_433]       = "VAG Audi 433MHz",
-    [SetTypeVAGType3_433]       = "VAG Seat 433MHz",
-    [SetTypeVAGType4_433]       = "VAG Skoda 433MHz",
-    [SetTypePorscheCayenne_433] = "VW/Porsche/Tuareg 433MHz",
-    [SetTypeFiatMarelli_433]    = "Fiat Marelli 433MHz",
-    [SetTypeFiatSPA_433]        = "FIAT SPA 433MHz",
-    [SetTypeFordV0_433]         = "Ford V0 433MHz",
-    [SetTypeKiaV0_433]          = "KIA/HYU V0 433MHz",
-    [SetTypeKiaV1_433]          = "KIA/HYU V1 433MHz",
-    [SetTypeKiaV2_433]          = "KIA/HYU V2 433MHz",
-    [SetTypeKiaV3V4_433]        = "KIA/HYU V3/V4 433MHz",
-    [SetTypeKiaV5_433]          = "KIA/HYU V5 433MHz",
-    [SetTypeKiaV6_433]          = "KIA/HYU V6 433MHz",
-    [SetTypeSubaru_433]         = "Subaru 433MHz",
-    [SetTypeMazdaSiemens_433]   = "MazdaSiemens 433MHz",
-    [SetTypeSuzuki_433]         = "Suzuki 433MHz",
-    [SetTypeMitsubishi_868]     = "Mitsubishi 868MHz",
+    [SetTypeVAGType1_433]       = "VAG VW/Golf",
+    [SetTypeVAGType1Old_433]    = "VAG VW Old",
+    [SetTypeVAGType2_433]       = "VAG Audi",
+    [SetTypeVAGType3_433]       = "VAG Seat",
+    [SetTypeVAGType4_433]       = "VAG Skoda",
+    [SetTypePorscheCayenne_433] = "VW/Porsche/Tuareg",
+    [SetTypeFiatMarelli_433]    = "Fiat Marelli",
+    [SetTypeFiatSPA_433]        = "FIAT SPA",
+    [SetTypeFordV0_433]         = "Ford V0",
+    [SetTypeKiaV0_433]          = "KIA/HYU V0",
+    [SetTypeKiaV1_433]          = "KIA/HYU V1",
+    [SetTypeKiaV2_433]          = "KIA/HYU V2",
+    [SetTypeKiaV3V4_433]        = "KIA/HYU V3/V4",
+    [SetTypeKiaV5_433]          = "KIA/HYU V5",
+    [SetTypeKiaV6_433]          = "KIA/HYU V6",
+    [SetTypeSubaru_433]         = "Subaru",
+    [SetTypeMazdaSiemens_433]   = "MazdaSiemens",
+    [SetTypeSuzuki_433]         = "Suzuki",
+    [SetTypeMitsubishi_868]     = "Mitsubishi",
 };
 
 void subghz_scene_set_type_on_enter(void* context) {
@@ -330,9 +330,28 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
         if(scene_manager_get_scene_state(subghz->scene_manager, SubGhzSceneStart) ==
            SubmenuIndexAddManuallyAdvanced) {
             switch(subghz->gen_info->type) {
-            case GenData: // Key (u64)
-                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetKey);
+            case GenData: {
+                // Car protocols get frequency selection first
+                SetType stype = (SetType)scene_manager_get_scene_state(subghz->scene_manager, SubGhzSceneSetType);
+                bool is_car = (stype == SetTypeFiatMarelli_433 ||
+                               stype == SetTypeFiatSPA_433 ||
+                               stype == SetTypeKiaV0_433 ||
+                               stype == SetTypeKiaV1_433 ||
+                               stype == SetTypeKiaV2_433 ||
+                               stype == SetTypeKiaV3V4_433 ||
+                               stype == SetTypeKiaV5_433 ||
+                               stype == SetTypeKiaV6_433 ||
+                               stype == SetTypeSubaru_433 ||
+                               stype == SetTypeMazdaSiemens_433 ||
+                               stype == SetTypeSuzuki_433 ||
+                               stype == SetTypeMitsubishi_868);
+                if(is_car) {
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
+                } else {
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetKey);
+                }
                 break;
+            }
             case GenSecPlus1: // None
                 return subghz_scene_set_type_generate_protocol_from_infos(subghz);
             case GenFaacSLH: // Serial (u32), Button (u8), Counter (u32), Seed (u32)
@@ -350,7 +369,7 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenPorscheCayenne: // Serial (u32), Button (u8), Counter (u32)
             case GenFordV0: // Serial (u32), Button (u8), Counter (u32)
             case GenVAG: // Serial (u32), Button (u8), Counter (u32)
-                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetSerial);
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 break;
             }
             return true;

@@ -801,7 +801,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     case SetTypeKiaV0_433:
         gen_info = (GenInfo){
             .type = GenData,
-            .mod = "AM650",
+            .mod = "FM476",
             .freq = 433920000,
             .data.name = SUBGHZ_PROTOCOL_KIA_V0_NAME,
             .data.key = key & 0x1FFFFFFFFFFFFFFF,
@@ -851,7 +851,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     case SetTypeSuzuki_433:
         gen_info = (GenInfo){
             .type = GenData,
-            .mod = "AM650",
+            .mod = "FM476",
             .freq = 433920000,
             .data.name = SUBGHZ_PROTOCOL_SUZUKI_NAME,
             .data.key = key,
@@ -880,7 +880,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     case SetTypeFiatMarelli_433:
         gen_info = (GenInfo){
             .type = GenData,
-            .mod = "FM476",
+            .mod = "AM650",
             .freq = 433920000,
             .data.name = FIAT_MARELLI_PROTOCOL_NAME,
             .data.key = key & 0xFFFFFFFFFFFFFFFF,
@@ -891,7 +891,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         gen_info = (GenInfo){
             .type = GenVAG,
             .mod = "AM650",
-            .freq = 433920000,
+            .freq = 434420000,
             .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
             .vag.cnt = 0x0001,
             .vag.btn = 0x20,
@@ -901,7 +901,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         gen_info = (GenInfo){
             .type = GenVAG,
             .mod = "AM650",
-            .freq = 433920000,
+            .freq = 434420000,
             .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
             .vag.cnt = 0x0001,
             .vag.btn = 0x20,
@@ -911,7 +911,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         gen_info = (GenInfo){
             .type = GenVAG,
             .mod = "AM650",
-            .freq = 433920000,
+            .freq = 434420000,
             .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
             .vag.cnt = 0x0001,
             .vag.btn = 0x20,
@@ -921,7 +921,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         gen_info = (GenInfo){
             .type = GenVAG,
             .mod = "AM650",
-            .freq = 433920000,
+            .freq = 434420000,
             .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
             .vag.cnt = 0x0001,
             .vag.btn = 0x20,
@@ -931,7 +931,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         gen_info = (GenInfo){
             .type = GenVAG,
             .mod = "AM650",
-            .freq = 433920000,
+            .freq = 434420000,
             .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
             .vag.cnt = 0x0001,
             .vag.btn = 0x20,
@@ -940,7 +940,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     case SetTypeFordV0_433:
         gen_info = (GenInfo){
             .type = GenFordV0,
-            .mod = "FM476",
+            .mod = "AM650",
             .freq = 433920000,
             .ford_v0.serial = key & 0x0FFFFFFF,
             .ford_v0.btn = 0x02,
@@ -950,7 +950,7 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     case SetTypeKiaV3V4_433:
         gen_info = (GenInfo){
             .type = GenData,
-            .mod = "AM650",
+            .mod = "FM476",
             .freq = 433920000,
             .data.name = SUBGHZ_PROTOCOL_KIA_V3_V4_NAME,
             .data.key = key & 0x0FFFFFFFFFFFFFFF,
