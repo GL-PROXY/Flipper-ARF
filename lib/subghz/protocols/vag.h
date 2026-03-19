@@ -26,3 +26,11 @@ SubGhzProtocolStatus
     subghz_protocol_encoder_vag_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_encoder_vag_stop(void* context);
 LevelDuration subghz_protocol_encoder_vag_yield(void* context);
+bool subghz_protocol_vag_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint32_t cnt,
+    uint8_t btn,
+    uint8_t vag_type,
+    SubGhzRadioPreset* preset);

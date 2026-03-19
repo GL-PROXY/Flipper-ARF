@@ -191,3 +191,27 @@ void subghz_txrx_gen_serial_gangqi(uint64_t* result_key);
  * @param result_key Pointer to a uint64_t where the key will be stored
  */
 void subghz_txrx_gen_key_marantec(uint64_t* result_key);
+bool subghz_txrx_gen_porsche_cayenne_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt);
+bool subghz_txrx_gen_vag_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint32_t cnt,
+    uint8_t btn,
+    uint8_t vag_type);
+
+bool subghz_txrx_gen_ford_v0_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t bs_magic);

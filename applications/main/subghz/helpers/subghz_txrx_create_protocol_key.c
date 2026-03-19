@@ -7,6 +7,9 @@
 #include <lib/subghz/protocols/secplus_v2.h>
 #include <lib/subghz/protocols/nice_flor_s.h>
 #include <lib/subghz/protocols/marantec.h>
+#include <lib/subghz/protocols/porsche_cayenne.h>
+#include <lib/subghz/protocols/vag.h>
+#include <lib/subghz/protocols/ford_v0.h>
 
 #include <flipper_format/flipper_format_i.h>
 #include <lib/toolbox/stream/stream.h>
@@ -538,4 +541,81 @@ void subghz_txrx_gen_key_marantec(uint64_t* result_key) {
     uint8_t crc = subghz_protocol_marantec_crc8(tdata, sizeof(tdata));
 
     *result_key = ((full_key_no_crc >> 8) << 8) | crc;
+}
+bool subghz_txrx_gen_porsche_cayenne_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_PORSCHE_CAYENNE_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_porsche_cayenne_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+bool subghz_txrx_gen_vag_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint32_t cnt,
+    uint8_t btn,
+    uint8_t vag_type) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, VAG_PROTOCOL_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_vag_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                cnt,
+                                btn,
+                                vag_type,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+
+bool subghz_txrx_gen_ford_v0_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t bs_magic) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, FORD_PROTOCOL_V0_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_ford_v0_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                bs_magic,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
 }

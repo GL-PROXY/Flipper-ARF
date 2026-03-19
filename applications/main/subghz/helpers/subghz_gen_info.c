@@ -2,6 +2,21 @@
 #include "../helpers/subghz_txrx_create_protocol_key.h"
 #include <lib/subghz/protocols/protocol_items.h>
 #include <lib/subghz/blocks/math.h>
+#include <lib/subghz/protocols/fiat_spa.h>
+#include <lib/subghz/protocols/kia_v0.h>
+#include <lib/subghz/protocols/kia_v1.h>
+#include <lib/subghz/protocols/kia_v2.h>
+#include <lib/subghz/protocols/subaru.h>
+#include <lib/subghz/protocols/mazda_siemens.h>
+#include <lib/subghz/protocols/suzuki.h>
+#include <lib/subghz/protocols/mitsubishi_v0.h>
+#include <lib/subghz/protocols/porsche_cayenne.h>
+#include <lib/subghz/protocols/vag.h>
+#include <lib/subghz/protocols/fiat_marelli.h>
+#include <lib/subghz/protocols/ford_v0.h>
+#include <lib/subghz/protocols/kia_v3_v4.h>
+#include <lib/subghz/protocols/kia_v5.h>
+#include <lib/subghz/protocols/kia_v6.h>
 
 void subghz_gen_info_reset(GenInfo* gen_info) {
     furi_assert(gen_info);
@@ -772,6 +787,195 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
             .freq = 433920000,
             .phoenix_v2.serial = (key & 0x0FFFFFFF) | 0xB0000000,
             .phoenix_v2.cnt = 0x025D};
+        break;
+    case SetTypeFiatSPA_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "AM650",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_FIAT_SPA_NAME,
+            .data.key = key & 0xFFFFFFFFFFFFFFFF,
+            .data.bits = 64,
+            .data.te = 0};
+        break;
+    case SetTypeKiaV0_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "AM650",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_KIA_V0_NAME,
+            .data.key = key & 0x1FFFFFFFFFFFFFFF,
+            .data.bits = 61,
+            .data.te = 0};
+        break;
+    case SetTypeKiaV1_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "AM650",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_KIA_V1_NAME,
+            .data.key = key & 0x01FFFFFFFFFFFFFF,
+            .data.bits = 57,
+            .data.te = 0};
+        break;
+    case SetTypeKiaV2_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "FM476",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_KIA_V2_NAME,
+            .data.key = key & 0x001FFFFFFFFFFFFF,
+            .data.bits = 53,
+            .data.te = 0};
+        break;
+    case SetTypeSubaru_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "AM650",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_SUBARU_NAME,
+            .data.key = key,
+            .data.bits = 64,
+            .data.te = 0};
+        break;
+    case SetTypeMazdaSiemens_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "FM476",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_MAZDA_SIEMENS_NAME,
+            .data.key = key,
+            .data.bits = 64,
+            .data.te = 0};
+        break;
+    case SetTypeSuzuki_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "AM650",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_SUZUKI_NAME,
+            .data.key = key,
+            .data.bits = 64,
+            .data.te = 0};
+        break;
+    case SetTypeMitsubishi_868:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "FM476",
+            .freq = 868350000,
+            .data.name = MITSUBISHI_PROTOCOL_V0_NAME,
+            .data.key = key,
+            .data.bits = 80,
+            .data.te = 0};
+        break;
+    case SetTypePorscheCayenne_433:
+        gen_info = (GenInfo){
+            .type = GenPorscheCayenne,
+            .mod = "AM650",
+            .freq = 433920000,
+            .porsche_cayenne.serial = key & 0x00FFFFFF,
+            .porsche_cayenne.btn = 0x01,
+            .porsche_cayenne.cnt = 0x0001};
+        break;
+    case SetTypeFiatMarelli_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "FM476",
+            .freq = 433920000,
+            .data.name = FIAT_MARELLI_PROTOCOL_NAME,
+            .data.key = key & 0xFFFFFFFFFFFFFFFF,
+            .data.bits = 80,
+            .data.te = 0};
+        break;
+    case SetTypeVAGType1_433:
+        gen_info = (GenInfo){
+            .type = GenVAG,
+            .mod = "AM650",
+            .freq = 433920000,
+            .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
+            .vag.cnt = 0x0001,
+            .vag.btn = 0x20,
+            .vag.vag_type = 1};
+        break;
+    case SetTypeVAGType1Old_433:
+        gen_info = (GenInfo){
+            .type = GenVAG,
+            .mod = "AM650",
+            .freq = 433920000,
+            .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
+            .vag.cnt = 0x0001,
+            .vag.btn = 0x20,
+            .vag.vag_type = 5};
+        break;
+    case SetTypeVAGType2_433:
+        gen_info = (GenInfo){
+            .type = GenVAG,
+            .mod = "AM650",
+            .freq = 433920000,
+            .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
+            .vag.cnt = 0x0001,
+            .vag.btn = 0x20,
+            .vag.vag_type = 2};
+        break;
+    case SetTypeVAGType3_433:
+        gen_info = (GenInfo){
+            .type = GenVAG,
+            .mod = "AM650",
+            .freq = 433920000,
+            .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
+            .vag.cnt = 0x0001,
+            .vag.btn = 0x20,
+            .vag.vag_type = 3};
+        break;
+    case SetTypeVAGType4_433:
+        gen_info = (GenInfo){
+            .type = GenVAG,
+            .mod = "AM650",
+            .freq = 433920000,
+            .vag.serial = (uint32_t)(key & 0x0FFFFFFF),
+            .vag.cnt = 0x0001,
+            .vag.btn = 0x20,
+            .vag.vag_type = 4};
+        break;
+    case SetTypeFordV0_433:
+        gen_info = (GenInfo){
+            .type = GenFordV0,
+            .mod = "FM476",
+            .freq = 433920000,
+            .ford_v0.serial = key & 0x0FFFFFFF,
+            .ford_v0.btn = 0x02,
+            .ford_v0.cnt = 0x0001,
+            .ford_v0.bs_magic = 0x6F};
+        break;
+    case SetTypeKiaV3V4_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "AM650",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_KIA_V3_V4_NAME,
+            .data.key = key & 0x0FFFFFFFFFFFFFFF,
+            .data.bits = 68,
+            .data.te = 0};
+        break;
+    case SetTypeKiaV5_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "FM476",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_KIA_V5_NAME,
+            .data.key = key & 0xFFFFFFFFFFFFFFFF,
+            .data.bits = 64,
+            .data.te = 0};
+        break;
+    case SetTypeKiaV6_433:
+        gen_info = (GenInfo){
+            .type = GenData,
+            .mod = "FM476",
+            .freq = 433920000,
+            .data.name = SUBGHZ_PROTOCOL_KIA_V6_NAME,
+            .data.key = key & 0xFFFFFFFFFFFFFFFF,
+            .data.bits = 144,
+            .data.te = 0};
         break;
     default:
         furi_crash("Not implemented");

@@ -17,6 +17,9 @@ typedef enum {
     GenSecPlus1,
     GenSecPlus2,
     GenPhoenixV2,
+    GenPorscheCayenne,
+    GenVAG,
+    GenFordV0,
 } GenType;
 
 typedef struct {
@@ -94,6 +97,23 @@ typedef struct {
             uint32_t serial;
             uint16_t cnt;
         } phoenix_v2;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint32_t cnt;
+        } porsche_cayenne;
+        struct {
+            uint32_t serial;
+            uint32_t cnt;
+            uint8_t btn;
+            uint8_t vag_type;
+        } vag;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint32_t cnt;
+            uint8_t bs_magic;
+        } ford_v0;
     };
 } GenInfo;
 

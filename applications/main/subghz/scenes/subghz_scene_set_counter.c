@@ -66,6 +66,18 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->phoenix_v2.cnt;
         byte_count = sizeof(subghz->gen_info->phoenix_v2.cnt);
         break;
+    case GenPorscheCayenne:
+        byte_ptr = (uint8_t*)&subghz->gen_info->porsche_cayenne.cnt;
+        byte_count = sizeof(subghz->gen_info->porsche_cayenne.cnt);
+        break;
+    case GenFordV0:
+        byte_ptr = (uint8_t*)&subghz->gen_info->ford_v0.cnt;
+        byte_count = sizeof(subghz->gen_info->ford_v0.cnt);
+        break;
+    case GenVAG:
+        byte_ptr = (uint8_t*)&subghz->gen_info->vag.cnt;
+        byte_count = sizeof(subghz->gen_info->vag.cnt);
+        break;
     // Not needed for these types
     case GenData:
     case GenSecPlus1:
@@ -85,7 +97,11 @@ void subghz_scene_set_counter_on_enter(void* context) {
 
     // Setup view
     ByteInput* byte_input = subghz->byte_input;
-    byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
+    if(subghz->gen_info->type == GenVAG) {
+        byte_input_set_header_text(byte_input, "VAG Counter (24-bit)\nTop byte ignored!\nStart low e.g. 0001");
+    } else {
+        byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
+    }
 
     byte_input_set_result_callback(
         byte_input,
@@ -143,6 +159,15 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                 break;
             case GenPhoenixV2:
                 subghz->gen_info->phoenix_v2.cnt = __bswap16(subghz->gen_info->phoenix_v2.cnt);
+                break;
+            case GenPorscheCayenne:
+                subghz->gen_info->porsche_cayenne.cnt = __bswap32(subghz->gen_info->porsche_cayenne.cnt);
+                break;
+            case GenFordV0:
+                subghz->gen_info->ford_v0.cnt = __bswap32(subghz->gen_info->ford_v0.cnt);
+                break;
+            case GenVAG:
+                subghz->gen_info->vag.cnt = __bswap32(subghz->gen_info->vag.cnt);
                 break;
                 // Not needed for these types
             case GenData:
@@ -246,6 +271,42 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->freq,
                     subghz->gen_info->phoenix_v2.serial,
                     subghz->gen_info->phoenix_v2.cnt);
+                break;
+            case GenPorscheCayenne:
+                generated_protocol = subghz_txrx_gen_porsche_cayenne_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->porsche_cayenne.serial,
+                    subghz->gen_info->porsche_cayenne.btn,
+                    subghz->gen_info->porsche_cayenne.cnt);
+                break;
+            case GenFordV0:
+                generated_protocol = subghz_txrx_gen_ford_v0_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->ford_v0.serial,
+                    subghz->gen_info->ford_v0.btn,
+                    subghz->gen_info->ford_v0.cnt,
+                    subghz->gen_info->ford_v0.bs_magic);
+                break;
+            case GenVAG:
+                if(subghz->gen_info->vag.cnt > 0x00FFFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Counter too large!\nMax: 0x00FFFFFF\n(24-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                generated_protocol = subghz_txrx_gen_vag_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->vag.serial,
+                    subghz->gen_info->vag.cnt,
+                    subghz->gen_info->vag.btn,
+                    subghz->gen_info->vag.vag_type);
                 break;
             // Not needed for these types
             case GenData:

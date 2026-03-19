@@ -92,6 +92,26 @@ static const char* submenu_names[SetTypeMAX] = {
     [SetTypeSecPlus_v2_315_00] = "Security+2.0 315MHz",
     [SetTypeSecPlus_v2_390_00] = "Security+2.0 390MHz",
     [SetTypeSecPlus_v2_433_00] = "Security+2.0 433MHz",
+    // --- Car Protocols ---
+    [SetTypeVAGType1_433]       = "VAG VW/Golf 433MHz",
+    [SetTypeVAGType1Old_433]    = "VAG VW Old 433MHz",
+    [SetTypeVAGType2_433]       = "VAG Audi 433MHz",
+    [SetTypeVAGType3_433]       = "VAG Seat 433MHz",
+    [SetTypeVAGType4_433]       = "VAG Skoda 433MHz",
+    [SetTypePorscheCayenne_433] = "VW/Porsche/Tuareg 433MHz",
+    [SetTypeFiatMarelli_433]    = "Fiat Marelli 433MHz",
+    [SetTypeFiatSPA_433]        = "FIAT SPA 433MHz",
+    [SetTypeFordV0_433]         = "Ford V0 433MHz",
+    [SetTypeKiaV0_433]          = "KIA/HYU V0 433MHz",
+    [SetTypeKiaV1_433]          = "KIA/HYU V1 433MHz",
+    [SetTypeKiaV2_433]          = "KIA/HYU V2 433MHz",
+    [SetTypeKiaV3V4_433]        = "KIA/HYU V3/V4 433MHz",
+    [SetTypeKiaV5_433]          = "KIA/HYU V5 433MHz",
+    [SetTypeKiaV6_433]          = "KIA/HYU V6 433MHz",
+    [SetTypeSubaru_433]         = "Subaru 433MHz",
+    [SetTypeMazdaSiemens_433]   = "MazdaSiemens 433MHz",
+    [SetTypeSuzuki_433]         = "Suzuki 433MHz",
+    [SetTypeMitsubishi_868]     = "Mitsubishi 868MHz",
 };
 
 void subghz_scene_set_type_on_enter(void* context) {
@@ -248,6 +268,35 @@ bool subghz_scene_set_type_generate_protocol_from_infos(SubGhz* subghz) {
             gen_info.phoenix_v2.serial,
             gen_info.phoenix_v2.cnt);
         break;
+    case GenPorscheCayenne:
+        generated_protocol = subghz_txrx_gen_porsche_cayenne_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.porsche_cayenne.serial,
+            gen_info.porsche_cayenne.btn,
+            gen_info.porsche_cayenne.cnt);
+        break;
+    case GenVAG:
+        generated_protocol = subghz_txrx_gen_vag_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.vag.serial,
+            gen_info.vag.cnt,
+            gen_info.vag.btn,
+            gen_info.vag.vag_type);
+        break;
+    case GenFordV0:
+        generated_protocol = subghz_txrx_gen_ford_v0_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.ford_v0.serial,
+            gen_info.ford_v0.btn,
+            gen_info.ford_v0.cnt,
+            gen_info.ford_v0.bs_magic);
+        break;
     default:
         furi_crash("Not implemented");
         break;
@@ -298,6 +347,9 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenNiceFlorS: // Serial (u32), Button (u8), Counter (u16)
             case GenSecPlus2: // Serial (u32), Button (u8), Counter (u32)
             case GenPhoenixV2: // Serial (u32), Counter (u16)
+            case GenPorscheCayenne: // Serial (u32), Button (u8), Counter (u32)
+            case GenFordV0: // Serial (u32), Button (u8), Counter (u32)
+            case GenVAG: // Serial (u32), Button (u8), Counter (u32)
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetSerial);
                 break;
             }

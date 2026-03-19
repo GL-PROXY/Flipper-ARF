@@ -37,3 +37,10 @@ SubGhzProtocolStatus subghz_protocol_encoder_porsche_cayenne_deserialize(
     FlipperFormat* flipper_format);
 void subghz_protocol_encoder_porsche_cayenne_stop(void* context);
 LevelDuration subghz_protocol_encoder_porsche_cayenne_yield(void* context);
+bool subghz_protocol_porsche_cayenne_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    SubGhzRadioPreset* preset);

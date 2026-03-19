@@ -346,6 +346,55 @@ static void encode_ford_v0(
 // ENCODER IMPLEMENTATION
 // =============================================================================
 
+static void subghz_protocol_encoder_ford_v0_get_upload(SubGhzProtocolEncoderFordV0* instance);
+
+bool subghz_protocol_ford_v0_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t bs_magic,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderFordV0* instance = context;
+    instance->serial = serial;
+    instance->button = btn;
+    instance->count = cnt;
+    instance->bs_magic = bs_magic;
+    instance->generic.serial = serial;
+    instance->generic.btn = btn;
+    instance->generic.cnt = cnt;
+    instance->generic.data_count_bit = 64;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(4);
+    instance->encoder.repeat = 10;
+    instance->encoder.is_running = false;
+    instance->bs = ford_v0_calculate_bs(cnt, btn, bs_magic);
+    encode_ford_v0(0x00, serial, btn, cnt, instance->bs, &instance->key1);
+    instance->generic.data = instance->key1;
+    uint8_t crc = ford_v0_calculate_crc_for_tx(instance->key1, instance->bs);
+    instance->key2 = ((uint16_t)instance->bs << 8) | crc;
+    subghz_protocol_encoder_ford_v0_get_upload(instance);
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        uint32_t tmp = serial;
+        flipper_format_write_uint32(flipper_format, "Serial", &tmp, 1);
+        tmp = btn;
+        flipper_format_write_uint32(flipper_format, "Btn", &tmp, 1);
+        tmp = cnt;
+        flipper_format_write_uint32(flipper_format, "Cnt", &tmp, 1);
+        tmp = bs_magic;
+        flipper_format_write_uint32(flipper_format, "BSMagic", &tmp, 1);
+        tmp = instance->bs;
+        flipper_format_write_uint32(flipper_format, "BS", &tmp, 1);
+        tmp = crc;
+        flipper_format_write_uint32(flipper_format, "CRC", &tmp, 1);
+    }
+    return ret;
+}
+
 static uint8_t subghz_protocol_ford_v0_get_btn_code(void) {
     uint8_t custom_btn = subghz_custom_btn_get();
     uint8_t original_btn = subghz_custom_btn_get_original();

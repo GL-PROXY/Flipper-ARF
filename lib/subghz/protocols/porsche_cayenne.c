@@ -456,6 +456,46 @@ void subghz_protocol_decoder_porsche_cayenne_get_string(void* context, FuriStrin
 // ENCODER
 // =============================================================================
 
+static void porsche_cayenne_build_upload(SubGhzProtocolEncoderPorscheCayenne* instance);
+
+bool subghz_protocol_porsche_cayenne_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderPorscheCayenne* instance = context;
+    instance->generic.serial = serial & 0xFFFFFF;
+    instance->generic.btn = btn;
+    instance->generic.cnt = (uint16_t)cnt;
+    instance->generic.data_count_bit = 64;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(5);
+    instance->encoder.repeat = 1;
+    instance->encoder.is_running = false;
+    porsche_cayenne_build_upload(instance);
+    instance->encoder.front = 0;
+    // Write key from first frame packet
+    uint8_t pkt[8];
+    porsche_cayenne_compute_frame(serial & 0xFFFFFF, btn, (uint16_t)cnt, 0b010, pkt);
+    uint64_t key = 0;
+    for(int i = 0; i < 8; i++) key = (key << 8) | pkt[i];
+    instance->generic.data = key;
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        uint32_t tmp = serial & 0xFFFFFF;
+        flipper_format_write_uint32(flipper_format, "Serial", &tmp, 1);
+        tmp = btn;
+        flipper_format_write_uint32(flipper_format, "Btn", &tmp, 1);
+        tmp = cnt;
+        flipper_format_write_uint32(flipper_format, "Counter", &tmp, 1);
+    }
+    return ret;
+}
+
 static uint8_t porsche_cayenne_get_btn_code(void) {
     uint8_t custom_btn  = subghz_custom_btn_get();
     uint8_t original_btn = subghz_custom_btn_get_original();

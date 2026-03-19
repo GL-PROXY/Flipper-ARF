@@ -38,3 +38,11 @@ SubGhzProtocolStatus
     subghz_protocol_encoder_ford_v0_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_encoder_ford_v0_stop(void* context);
 LevelDuration subghz_protocol_encoder_ford_v0_yield(void* context);
+bool subghz_protocol_ford_v0_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t bs_magic,
+    SubGhzRadioPreset* preset);

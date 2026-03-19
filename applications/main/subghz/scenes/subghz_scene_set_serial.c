@@ -66,6 +66,18 @@ void subghz_scene_set_serial_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->phoenix_v2.serial;
         byte_count = sizeof(subghz->gen_info->phoenix_v2.serial);
         break;
+    case GenPorscheCayenne:
+        byte_ptr = (uint8_t*)&subghz->gen_info->porsche_cayenne.serial;
+        byte_count = sizeof(subghz->gen_info->porsche_cayenne.serial);
+        break;
+    case GenVAG:
+        byte_ptr = (uint8_t*)&subghz->gen_info->vag.serial;
+        byte_count = sizeof(subghz->gen_info->vag.serial);
+        break;
+    case GenFordV0:
+        byte_ptr = (uint8_t*)&subghz->gen_info->ford_v0.serial;
+        byte_count = sizeof(subghz->gen_info->ford_v0.serial);
+        break;
     // Not needed for these types
     case GenData:
     case GenSecPlus1:
@@ -81,7 +93,11 @@ void subghz_scene_set_serial_on_enter(void* context) {
 
     // Setup view
     ByteInput* byte_input = subghz->byte_input;
-    byte_input_set_header_text(byte_input, "Enter SERIAL in hex");
+    if(subghz->gen_info->type == GenVAG) {
+        byte_input_set_header_text(byte_input, "VAG Serial (28-bit)\nMax: 0FFFFFFF");
+    } else {
+        byte_input_set_header_text(byte_input, "Enter SERIAL in hex");
+    }
     byte_input_set_result_callback(
         byte_input,
         subghz_scene_set_serial_byte_input_callback,
@@ -145,6 +161,18 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 subghz->gen_info->phoenix_v2.serial =
                     __bswap32(subghz->gen_info->phoenix_v2.serial);
                 break;
+            case GenPorscheCayenne:
+                subghz->gen_info->porsche_cayenne.serial =
+                    __bswap32(subghz->gen_info->porsche_cayenne.serial);
+                break;
+            case GenVAG:
+                subghz->gen_info->vag.serial =
+                    __bswap32(subghz->gen_info->vag.serial);
+                break;
+            case GenFordV0:
+                subghz->gen_info->ford_v0.serial =
+                    __bswap32(subghz->gen_info->ford_v0.serial);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -169,6 +197,20 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
             case GenCameAtomo:
             case GenPhoenixV2:
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            case GenPorscheCayenne:
+            case GenFordV0:
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
+                break;
+            case GenVAG:
+                if(subghz->gen_info->vag.serial > 0x0FFFFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Serial too large!\nMax: 0x0FFFFFFF\n(28-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
             // Not needed for these types
             case GenData:

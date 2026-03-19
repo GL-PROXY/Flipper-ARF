@@ -923,6 +923,81 @@ static uint8_t vag_btn_to_byte(uint8_t btn, uint8_t vag_type) {
     }
 }
 
+static void vag_encoder_build_type1(SubGhzProtocolEncoderVAG* instance);
+static void vag_encoder_build_type2(SubGhzProtocolEncoderVAG* instance);
+static void vag_encoder_build_type3_4(SubGhzProtocolEncoderVAG* instance);
+
+bool subghz_protocol_vag_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint32_t cnt,
+    uint8_t btn,
+    uint8_t vag_type,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderVAG* instance = context;
+    instance->serial = serial;
+    instance->cnt = cnt;
+    instance->btn = btn;
+    instance->vag_type = vag_type;
+    instance->key_idx = 0xFF;
+    // Pre-set type byte so vehicle name shows correctly in decoder
+    uint8_t type_byte;
+    switch(vag_type) {
+    case 2:  type_byte = 0xC1; break; // Audi
+    case 3:  type_byte = 0xC2; break; // Seat
+    case 4:  type_byte = 0xC3; break; // Skoda
+    case 5:  type_byte = 0xC0; break; // VW OLD
+    default: type_byte = 0x00; break; // VW NEW
+    }
+    instance->key1_high = (uint32_t)type_byte << 24;
+    instance->key1_low = 0;
+    instance->key2_low = 0;
+    instance->key2_high = 0;
+    instance->repeat = 3;
+    instance->is_running = false;
+    instance->front = 0;
+    instance->generic.data_count_bit = 80;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(4);
+    switch(vag_type) {
+    case 2:
+        vag_encoder_build_type2(instance);
+        break;
+    case 3:
+    case 4:
+        vag_encoder_build_type3_4(instance);
+        break;
+    case 5: // VAG OLD - type1 with 0xC0 type byte (key1_high already set above)
+        vag_encoder_build_type1(instance);
+        vag_type = 1; // write Type=1 to file
+        break;
+    default:
+        vag_encoder_build_type1(instance);
+        break;
+    }
+    if(instance->size_upload == 0) return false;
+    uint64_t key1 = ((uint64_t)instance->key1_high << 32) | instance->key1_low;
+    instance->generic.data = key1;
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        uint8_t key2_bytes[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        uint16_t key2 = (uint16_t)(instance->key2_low & 0xFFFF);
+        key2_bytes[6] = (uint8_t)((key2 >> 8) & 0xFF);
+        key2_bytes[7] = (uint8_t)(key2 & 0xFF);
+        flipper_format_write_hex(flipper_format, "Key2", key2_bytes, 8);
+        uint32_t type = vag_type;
+        flipper_format_write_uint32(flipper_format, "Type", &type, 1);
+        uint32_t tmp = serial;
+        flipper_format_write_uint32(flipper_format, "Serial", &tmp, 1);
+        tmp = cnt;
+        flipper_format_write_uint32(flipper_format, "Cnt", &tmp, 1);
+    }
+    return ret;
+}
+
 static void vag_encoder_build_type1(SubGhzProtocolEncoderVAG* instance) {
 
     size_t index = 0;
@@ -944,7 +1019,7 @@ static void vag_encoder_build_type1(SubGhzProtocolEncoderVAG* instance) {
     block[5] = (uint8_t)(instance->cnt >> 8);
     block[6] = (uint8_t)(instance->cnt >> 16);
 
-    block[7] = btn_byte;
+    block[7] = btn_byte << 4; // nibble must be in high nibble per protocol
 
     int key_idx = (instance->key_idx != 0xFF) ? instance->key_idx : 0;
 

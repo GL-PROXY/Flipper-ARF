@@ -1,5 +1,7 @@
 #include "../subghz_i.h"
 #include "../helpers/subghz_txrx_create_protocol_key.h"
+#include <lib/subghz/protocols/vag.h>
+#include <string.h>
 
 #include <machine/endian.h>
 

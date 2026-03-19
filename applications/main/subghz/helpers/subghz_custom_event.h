@@ -147,5 +147,26 @@ typedef enum {
     SetTypeSecPlus_v2_390_00,
     SetTypeSecPlus_v2_433_00,
 
+    // --- Car Protocols ---
+    SetTypeVAGType1_433,    // VW NEW - AUT64 key 0
+    SetTypeVAGType1Old_433,  // VW OLD - AUT64 key 0 (0xC0 type byte)
+    SetTypeVAGType2_433,  // AUDI - TEA encryption
+    SetTypeVAGType3_433,  // SEAT - AUT64 key 1
+    SetTypeVAGType4_433,  // SKODA - AUT64 key 2
+    SetTypePorscheCayenne_433,
+    SetTypeFiatMarelli_433,
+    SetTypeFiatSPA_433,
+    SetTypeFordV0_433,
+    SetTypeKiaV0_433,
+    SetTypeKiaV1_433,
+    SetTypeKiaV2_433,
+    SetTypeKiaV3V4_433,
+    SetTypeKiaV5_433,
+    SetTypeKiaV6_433,
+    SetTypeSubaru_433,
+    SetTypeMazdaSiemens_433,
+    SetTypeSuzuki_433,
+    SetTypeMitsubishi_868,
+
     SetTypeMAX,
 } SetType;

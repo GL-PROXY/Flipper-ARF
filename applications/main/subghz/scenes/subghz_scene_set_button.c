@@ -56,6 +56,18 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_ptr = &subghz->gen_info->sec_plus_2.btn;
         byte_count = sizeof(subghz->gen_info->sec_plus_2.btn);
         break;
+    case GenPorscheCayenne:
+        byte_ptr = &subghz->gen_info->porsche_cayenne.btn;
+        byte_count = sizeof(subghz->gen_info->porsche_cayenne.btn);
+        break;
+    case GenFordV0:
+        byte_ptr = &subghz->gen_info->ford_v0.btn;
+        byte_count = sizeof(subghz->gen_info->ford_v0.btn);
+        break;
+    case GenVAG:
+        byte_ptr = &subghz->gen_info->vag.btn;
+        byte_count = sizeof(subghz->gen_info->vag.btn);
+        break;
     // Not needed for these types
     case GenPhoenixV2:
     case GenData:
@@ -71,7 +83,11 @@ void subghz_scene_set_button_on_enter(void* context) {
 
     // Setup view
     ByteInput* byte_input = subghz->byte_input;
-    byte_input_set_header_text(byte_input, "Enter BUTTON in hex");
+    if(subghz->gen_info->type == GenVAG) {
+        byte_input_set_header_text(byte_input, "VAG Button (1 byte):\n10=Unlock 20=Lock\n40=Trunk  80=Panic");
+    } else {
+        byte_input_set_header_text(byte_input, "Enter BUTTON in hex");
+    }
     byte_input_set_result_callback(
         byte_input,
         subghz_scene_set_button_byte_input_callback,
@@ -99,8 +115,22 @@ bool subghz_scene_set_button_on_event(void* context, SceneManagerEvent event) {
             case GenJarolift:
             case GenNiceFlorS:
             case GenSecPlus2:
+            case GenPorscheCayenne:
+            case GenFordV0:
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
+            case GenVAG: {
+                uint8_t vbtn = subghz->gen_info->vag.btn;
+                if(vbtn != 0x10 && vbtn != 0x20 && vbtn != 0x40 && vbtn != 0x80) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "\nInvalid Button!\n10 20 40 or 80\nUnlock, Lock, \nTrunk, Panic");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
             // Not needed for these types
             case GenCameAtomo:
             case GenPhoenixV2:
