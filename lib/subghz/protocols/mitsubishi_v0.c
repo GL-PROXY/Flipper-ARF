@@ -13,7 +13,7 @@ static const SubGhzBlockConst subghz_protocol_mitsubishi_v0_const = {
     .te_short = 250,
     .te_long = 500,
     .te_delta = 100,
-    .min_count_bit_for_found = 80,
+    .min_count_bit_for_found = 96,
 };
 
 struct SubGhzProtocolDecoderMitsubishiV0 {
@@ -302,7 +302,19 @@ SubGhzProtocolStatus subghz_protocol_decoder_mitsubishi_v0_serialize(
 
 SubGhzProtocolStatus subghz_protocol_decoder_mitsubishi_v0_deserialize(void* context, FlipperFormat* ff) {
     SubGhzProtocolDecoderMitsubishiV0* instance = context;
-    return subghz_block_generic_deserialize_check_count_bit(&instance->generic, ff, subghz_protocol_mitsubishi_v0_const.min_count_bit_for_found);
+    SubGhzProtocolStatus ret = subghz_block_generic_deserialize_check_count_bit(
+        &instance->generic, ff, subghz_protocol_mitsubishi_v0_const.min_count_bit_for_found);
+    if(ret == SubGhzProtocolStatusOk) {
+        flipper_format_rewind(ff);
+        flipper_format_read_uint32(ff, "Serial", &instance->generic.serial, 1);
+        flipper_format_rewind(ff);
+        flipper_format_read_uint32(ff, "Cnt", &instance->generic.cnt, 1);
+        flipper_format_rewind(ff);
+        uint32_t btn_tmp = 0;
+        flipper_format_read_uint32(ff, "Btn", &btn_tmp, 1);
+        instance->generic.btn = (uint8_t)btn_tmp;
+    }
+    return ret;
 }
 
 void subghz_protocol_decoder_mitsubishi_v0_get_string(void* context, FuriString* output) {
@@ -319,3 +331,42 @@ void subghz_protocol_decoder_mitsubishi_v0_get_string(void* context, FuriString*
         instance->generic.cnt,
         instance->generic.btn);
 }
+
+// ============================================================================
+// CREATE DATA
+// ============================================================================
+
+bool subghz_protocol_mitsubishi_v0_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderMitsubishiV0* instance = context;
+
+    instance->generic.serial = serial;
+    instance->generic.btn = btn;
+    instance->generic.cnt = cnt;
+    instance->generic.data_count_bit = MITSUBISHI_V0_BIT_COUNT;
+
+    subghz_protocol_encoder_mitsubishi_v0_get_upload(instance);
+    instance->encoder.is_running = true;
+
+    if(subghz_block_generic_serialize(&instance->generic, flipper_format, preset) !=
+       SubGhzProtocolStatusOk)
+        return false;
+
+    if(!flipper_format_write_uint32(flipper_format, "Serial", &instance->generic.serial, 1))
+        return false;
+    if(!flipper_format_write_uint32(flipper_format, "Cnt", &instance->generic.cnt, 1))
+        return false;
+    uint32_t btn_tmp = instance->generic.btn;
+    if(!flipper_format_write_uint32(flipper_format, "Btn", &btn_tmp, 1))
+        return false;
+
+    return true;
+}
+
+

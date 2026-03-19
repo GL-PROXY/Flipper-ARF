@@ -109,7 +109,7 @@ static const char* submenu_names[SetTypeMAX] = {
     [SetTypeKiaV5_433]          = "KIA/HYU V5",
     [SetTypeKiaV6_433]          = "KIA/HYU V6",
     [SetTypeSubaru_433]         = "Subaru",
-    [SetTypeMazdaSiemens_433]   = "MazdaSiemens",
+    [SetTypeMazdaSiemens_433]   = "Mazda Siemens",
     [SetTypeSuzuki_433]         = "Suzuki",
     [SetTypeMitsubishi_868]     = "Mitsubishi",
 };
@@ -297,6 +297,15 @@ bool subghz_scene_set_type_generate_protocol_from_infos(SubGhz* subghz) {
             gen_info.ford_v0.cnt,
             gen_info.ford_v0.bs_magic);
         break;
+    case GenMitsubishiV0:
+        generated_protocol = subghz_txrx_gen_mitsubishi_v0_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.mitsubishi_v0.serial,
+            gen_info.mitsubishi_v0.btn,
+            gen_info.mitsubishi_v0.cnt);
+        break;
     default:
         furi_crash("Not implemented");
         break;
@@ -343,8 +352,7 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
                                stype == SetTypeKiaV6_433 ||
                                stype == SetTypeSubaru_433 ||
                                stype == SetTypeMazdaSiemens_433 ||
-                               stype == SetTypeSuzuki_433 ||
-                               stype == SetTypeMitsubishi_868);
+                               stype == SetTypeSuzuki_433);
                 if(is_car) {
                     scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 } else {
@@ -368,6 +376,7 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenPhoenixV2: // Serial (u32), Counter (u16)
             case GenPorscheCayenne: // Serial (u32), Button (u8), Counter (u32)
             case GenFordV0: // Serial (u32), Button (u8), Counter (u32)
+            case GenMitsubishiV0: // Serial (u32), Button (u8), Counter (u32)
             case GenVAG: // Serial (u32), Button (u8), Counter (u32)
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 break;
@@ -383,3 +392,6 @@ void subghz_scene_set_type_on_exit(void* context) {
     SubGhz* subghz = context;
     submenu_reset(subghz->submenu);
 }
+
+
+

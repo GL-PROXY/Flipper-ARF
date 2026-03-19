@@ -78,6 +78,10 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->vag.cnt;
         byte_count = sizeof(subghz->gen_info->vag.cnt);
         break;
+    case GenMitsubishiV0:
+        byte_ptr = (uint8_t*)&subghz->gen_info->mitsubishi_v0.cnt;
+        byte_count = sizeof(subghz->gen_info->mitsubishi_v0.cnt);
+        break;
     // Not needed for these types
     case GenData:
     case GenSecPlus1:
@@ -103,6 +107,8 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "Porsche Counter\n(16-bit) e.g. 0001");
     } else if(subghz->gen_info->type == GenFordV0) {
         byte_input_set_header_text(byte_input, "Ford Counter (20-bit)\nMax: 000FFFFF");
+    } else if(subghz->gen_info->type == GenMitsubishiV0) {
+        byte_input_set_header_text(byte_input, "Mitsubishi Counter\n(16-bit) Max: 0000FFFF");
     } else {
         byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
     }
@@ -172,6 +178,10 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                 break;
             case GenVAG:
                 subghz->gen_info->vag.cnt = __bswap32(subghz->gen_info->vag.cnt);
+                break;
+            case GenMitsubishiV0:
+                subghz->gen_info->mitsubishi_v0.cnt =
+                    __bswap32(subghz->gen_info->mitsubishi_v0.cnt);
                 break;
                 // Not needed for these types
             case GenData:
@@ -319,6 +329,22 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->vag.btn,
                     subghz->gen_info->vag.vag_type);
                 break;
+            case GenMitsubishiV0:
+                if(subghz->gen_info->mitsubishi_v0.cnt > 0x0000FFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Counter too large!\nMax: 0x0000FFFF\n(16-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                generated_protocol = subghz_txrx_gen_mitsubishi_v0_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->mitsubishi_v0.serial,
+                    subghz->gen_info->mitsubishi_v0.btn,
+                    subghz->gen_info->mitsubishi_v0.cnt);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -352,3 +378,7 @@ void subghz_scene_set_counter_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+
+

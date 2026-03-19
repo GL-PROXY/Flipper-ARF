@@ -68,6 +68,10 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_ptr = &subghz->gen_info->vag.btn;
         byte_count = sizeof(subghz->gen_info->vag.btn);
         break;
+    case GenMitsubishiV0:
+        byte_ptr = &subghz->gen_info->mitsubishi_v0.btn;
+        byte_count = sizeof(subghz->gen_info->mitsubishi_v0.btn);
+        break;
     // Not needed for these types
     case GenPhoenixV2:
     case GenData:
@@ -89,6 +93,8 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "Porsche Btn:\n01=Lock 02=Unlock\n04=Trunk 08=Open");
     } else if(subghz->gen_info->type == GenFordV0) {
         byte_input_set_header_text(byte_input, "Ford Btn:\n01=Lock 02=Unlock\n04=Boot/Trunk");
+    } else if(subghz->gen_info->type == GenMitsubishiV0) {
+        byte_input_set_header_text(byte_input, "Mitsubishi Btn:\n01=Lock 02=Unlock\n04=Trunk");
     } else {
         byte_input_set_header_text(byte_input, "Enter BUTTON in hex");
     }
@@ -155,6 +161,9 @@ bool subghz_scene_set_button_on_event(void* context, SceneManagerEvent event) {
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
             }
+            case GenMitsubishiV0:
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
             // Not needed for these types
             case GenCameAtomo:
             case GenPhoenixV2:
@@ -178,3 +187,6 @@ void subghz_scene_set_button_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+

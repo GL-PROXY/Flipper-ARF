@@ -860,13 +860,12 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         break;
     case SetTypeMitsubishi_868:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenMitsubishiV0,
             .mod = "FM476",
             .freq = 868350000,
-            .data.name = MITSUBISHI_PROTOCOL_V0_NAME,
-            .data.key = key,
-            .data.bits = 80,
-            .data.te = 0};
+            .mitsubishi_v0.serial = key & 0x0FFFFFFF,
+            .mitsubishi_v0.btn = 0x01,
+            .mitsubishi_v0.cnt = 0x0001};
         break;
     case SetTypePorscheCayenne_433:
         gen_info = (GenInfo){
@@ -983,3 +982,4 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     }
     *infos_dest = gen_info;
 }
+

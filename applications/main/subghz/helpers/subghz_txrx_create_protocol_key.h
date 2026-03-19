@@ -215,3 +215,12 @@ bool subghz_txrx_gen_ford_v0_protocol(
     uint8_t btn,
     uint32_t cnt,
     uint8_t bs_magic);
+
+bool subghz_txrx_gen_mitsubishi_v0_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt);
+
