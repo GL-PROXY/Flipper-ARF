@@ -82,6 +82,10 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->mitsubishi_v0.cnt;
         byte_count = sizeof(subghz->gen_info->mitsubishi_v0.cnt);
         break;
+    case GenSubaru:
+        byte_ptr = (uint8_t*)&subghz->gen_info->subaru.cnt;
+        byte_count = sizeof(subghz->gen_info->subaru.cnt);
+        break;
     // Not needed for these types
     case GenData:
     case GenSecPlus1:
@@ -109,6 +113,8 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "Ford Counter (20-bit)\nMax: 000FFFFF");
     } else if(subghz->gen_info->type == GenMitsubishiV0) {
         byte_input_set_header_text(byte_input, "Mitsubishi Counter\n(16-bit) Max: 0000FFFF");
+    } else if(subghz->gen_info->type == GenSubaru) {
+        byte_input_set_header_text(byte_input, "Subaru Counter\n(16-bit) Max: 0000FFFF");
     } else {
         byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
     }
@@ -182,6 +188,10 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
             case GenMitsubishiV0:
                 subghz->gen_info->mitsubishi_v0.cnt =
                     __bswap32(subghz->gen_info->mitsubishi_v0.cnt);
+                break;
+            case GenSubaru:
+                subghz->gen_info->subaru.cnt =
+                    __bswap16(subghz->gen_info->subaru.cnt);
                 break;
                 // Not needed for these types
             case GenData:
@@ -345,6 +355,15 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->mitsubishi_v0.btn,
                     subghz->gen_info->mitsubishi_v0.cnt);
                 break;
+            case GenSubaru:
+                generated_protocol = subghz_txrx_gen_subaru_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->subaru.serial,
+                    subghz->gen_info->subaru.btn,
+                    subghz->gen_info->subaru.cnt);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -378,6 +397,10 @@ void subghz_scene_set_counter_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+
+
 
 
 

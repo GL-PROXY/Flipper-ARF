@@ -651,3 +651,56 @@ SubGhzProtocolStatus subghz_protocol_encoder_subaru_deserialize(void* context, F
     
     return ret;
 }
+
+bool subghz_protocol_subaru_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderSubaru* instance = context;
+
+    instance->serial = serial & 0x00FFFFFF;
+    instance->button = btn;
+    instance->count = cnt;
+
+    uint8_t b[8] = {0};
+    b[0] = (b[0] & 0xF0) | (instance->button & 0x0F);
+    b[1] = (instance->serial >> 16) & 0xFF;
+    b[2] = (instance->serial >> 8) & 0xFF;
+    b[3] = instance->serial & 0xFF;
+
+    subaru_encode_count(b, instance->count);
+
+    instance->key = 0;
+    for(int i = 0; i < 8; i++) {
+        instance->key = (instance->key << 8) | b[i];
+    }
+
+    instance->generic.data = instance->key;
+    instance->generic.data_count_bit = 64;
+    instance->generic.serial = instance->serial;
+    instance->generic.btn = instance->button;
+    instance->generic.cnt = instance->count;
+
+    subghz_custom_btn_set_original(subaru_btn_to_custom(instance->button));
+    subghz_custom_btn_set_max(5);
+
+    subghz_protocol_encoder_subaru_get_upload(instance);
+    instance->encoder.is_running = true;
+
+    if(subghz_block_generic_serialize(&instance->generic, flipper_format, preset) !=
+       SubGhzProtocolStatusOk)
+        return false;
+
+    uint8_t key_data[sizeof(uint64_t)] = {0};
+    for(size_t i = 0; i < sizeof(uint64_t); i++) {
+        key_data[sizeof(uint64_t) - i - 1] = (instance->key >> (i * 8)) & 0xFF;
+    }
+    if(!flipper_format_update_hex(flipper_format, "Key", key_data, sizeof(uint64_t)))
+        return false;
+
+    return true;
+}

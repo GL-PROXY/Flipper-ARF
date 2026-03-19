@@ -85,6 +85,10 @@ void subghz_scene_set_serial_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->mitsubishi_v0.serial;
         byte_count = sizeof(subghz->gen_info->mitsubishi_v0.serial);
         break;
+    case GenSubaru:
+        byte_ptr = (uint8_t*)&subghz->gen_info->subaru.serial;
+        byte_count = sizeof(subghz->gen_info->subaru.serial);
+        break;
     // Not needed for these types
     case GenData:
     case GenSecPlus1:
@@ -186,6 +190,10 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 subghz->gen_info->mitsubishi_v0.serial =
                     __bswap32(subghz->gen_info->mitsubishi_v0.serial);
                 break;
+            case GenSubaru:
+                subghz->gen_info->subaru.serial =
+                    __bswap32(subghz->gen_info->subaru.serial);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -244,6 +252,16 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
             case GenMitsubishiV0:
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
+            case GenSubaru:
+                if(subghz->gen_info->subaru.serial > 0x00FFFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Serial too large!\nMax: 0x00FFFFFF\n(24-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -265,6 +283,10 @@ void subghz_scene_set_serial_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+
+
 
 
 

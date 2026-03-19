@@ -306,6 +306,15 @@ bool subghz_scene_set_type_generate_protocol_from_infos(SubGhz* subghz) {
             gen_info.mitsubishi_v0.btn,
             gen_info.mitsubishi_v0.cnt);
         break;
+    case GenSubaru:
+        generated_protocol = subghz_txrx_gen_subaru_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.subaru.serial,
+            gen_info.subaru.btn,
+            gen_info.subaru.cnt);
+        break;
     default:
         furi_crash("Not implemented");
         break;
@@ -352,7 +361,8 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
                                stype == SetTypeKiaV6_433 ||
                                stype == SetTypeSubaru_433 ||
                                stype == SetTypeMazdaSiemens_433 ||
-                               stype == SetTypeSuzuki_433);
+                               stype == SetTypeSuzuki_433 ||
+                               stype == SetTypeSubaru_433);
                 if(is_car) {
                     scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 } else {
@@ -377,6 +387,7 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenPorscheCayenne: // Serial (u32), Button (u8), Counter (u32)
             case GenFordV0: // Serial (u32), Button (u8), Counter (u32)
             case GenMitsubishiV0: // Serial (u32), Button (u8), Counter (u32)
+            case GenSubaru: // Serial (u24), Button (u8), Counter (u16)
             case GenVAG: // Serial (u32), Button (u8), Counter (u32)
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 break;
@@ -392,6 +403,10 @@ void subghz_scene_set_type_on_exit(void* context) {
     SubGhz* subghz = context;
     submenu_reset(subghz->submenu);
 }
+
+
+
+
 
 
 

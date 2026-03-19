@@ -31,3 +31,12 @@ LevelDuration subghz_protocol_encoder_subaru_yield(void* context);
 SubGhzProtocolStatus subghz_protocol_encoder_subaru_deserialize(
     void* context,
     FlipperFormat* flipper_format);
+
+bool subghz_protocol_subaru_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset);
+

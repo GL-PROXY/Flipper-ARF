@@ -830,13 +830,12 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         break;
     case SetTypeSubaru_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenSubaru,
             .mod = "AM650",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_SUBARU_NAME,
-            .data.key = key,
-            .data.bits = 64,
-            .data.te = 0};
+            .subaru.serial = key & 0x00FFFFFF,
+            .subaru.btn = 0x01,
+            .subaru.cnt = 0x0001};
         break;
     case SetTypeMazdaSiemens_433:
         gen_info = (GenInfo){
@@ -982,4 +981,5 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
     }
     *infos_dest = gen_info;
 }
+
 

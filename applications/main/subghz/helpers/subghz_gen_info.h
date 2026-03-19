@@ -21,6 +21,7 @@ typedef enum {
     GenVAG,
     GenFordV0,
     GenMitsubishiV0,
+    GenSubaru,
 } GenType;
 
 typedef struct {
@@ -120,11 +121,18 @@ typedef struct {
             uint8_t btn;
             uint32_t cnt;
         } mitsubishi_v0;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint16_t cnt;
+        } subaru;
     };
 } GenInfo;
 
 void subghz_gen_info_reset(GenInfo* gen_info);
 
 void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType type);
+
+
 
 
