@@ -78,6 +78,10 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->vag.cnt;
         byte_count = sizeof(subghz->gen_info->vag.cnt);
         break;
+    case GenFiatSpa:
+        byte_ptr = (uint8_t*)&subghz->gen_info->fiat_spa.hop;
+        byte_count = sizeof(subghz->gen_info->fiat_spa.hop);
+        break;
     case GenMitsubishiV0:
         byte_ptr = (uint8_t*)&subghz->gen_info->mitsubishi_v0.cnt;
         byte_count = sizeof(subghz->gen_info->mitsubishi_v0.cnt);
@@ -184,6 +188,9 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                 break;
             case GenVAG:
                 subghz->gen_info->vag.cnt = __bswap32(subghz->gen_info->vag.cnt);
+                break;
+            case GenFiatSpa:
+                subghz->gen_info->fiat_spa.hop = __bswap32(subghz->gen_info->fiat_spa.hop);
                 break;
             case GenMitsubishiV0:
                 subghz->gen_info->mitsubishi_v0.cnt =
@@ -321,6 +328,15 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->ford_v0.btn,
                     subghz->gen_info->ford_v0.cnt,
                     subghz->gen_info->ford_v0.bs_magic);
+                break;
+            case GenFiatSpa:
+                generated_protocol = subghz_txrx_gen_fiat_spa_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->fiat_spa.fix,
+                    subghz->gen_info->fiat_spa.hop,
+                    subghz->gen_info->fiat_spa.endbyte);
                 break;
             case GenVAG:
                 if(subghz->gen_info->vag.cnt > 0x00FFFFFF) {

@@ -12,7 +12,6 @@
 #include <lib/subghz/protocols/mitsubishi_v0.h>
 #include <lib/subghz/protocols/porsche_cayenne.h>
 #include <lib/subghz/protocols/vag.h>
-#include <lib/subghz/protocols/fiat_marelli.h>
 #include <lib/subghz/protocols/ford_v0.h>
 #include <lib/subghz/protocols/kia_v3_v4.h>
 #include <lib/subghz/protocols/kia_v5.h>
@@ -790,13 +789,12 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         break;
     case SetTypeFiatSPA_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenFiatSpa,
             .mod = "AM650",
-            .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_FIAT_SPA_NAME,
-            .data.key = key & 0xFFFFFFFFFFFFFFFF,
-            .data.bits = 64,
-            .data.te = 0};
+            .freq = 433889000,
+            .fiat_spa.fix = key & 0xFFFFFFFF,
+            .fiat_spa.hop = 0x0001,
+            .fiat_spa.endbyte = 0x00};
         break;
     case SetTypeKiaV0_433:
         gen_info = (GenInfo){
@@ -874,16 +872,6 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
             .porsche_cayenne.serial = key & 0x00FFFFFF,
             .porsche_cayenne.btn = 0x01,
             .porsche_cayenne.cnt = 0x0001};
-        break;
-    case SetTypeFiatMarelli_433:
-        gen_info = (GenInfo){
-            .type = GenData,
-            .mod = "AM650",
-            .freq = 433920000,
-            .data.name = FIAT_MARELLI_PROTOCOL_NAME,
-            .data.key = key & 0xFFFFFFFFFFFFFFFF,
-            .data.bits = 80,
-            .data.te = 0};
         break;
     case SetTypeVAGType1_433:
         gen_info = (GenInfo){

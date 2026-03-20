@@ -367,6 +367,34 @@ void subghz_protocol_decoder_fiat_spa_get_string(void* context, FuriString* outp
         instance->generic.btn);
 }
 
+
+void subghz_protocol_encoder_fiat_spa_get_upload(SubGhzProtocolEncoderFiatSpa* instance);
+
+bool subghz_protocol_fiat_spa_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t fix,
+    uint32_t hop,
+    uint8_t endbyte,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderFiatSpa* instance = context;
+    instance->fix = fix;
+    instance->hop = hop;
+    instance->endbyte = endbyte;
+    instance->generic.data = ((uint64_t)hop << 32) | fix;
+    instance->generic.data_count_bit = 71;
+    instance->generic.serial = fix;
+    instance->generic.cnt = hop;
+    instance->generic.btn = endbyte;
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        uint32_t tmp = endbyte;
+        flipper_format_write_uint32(flipper_format, "EndByte", &tmp, 1);
+    }
+    return ret;
+}
 void* subghz_protocol_encoder_fiat_spa_alloc(SubGhzEnvironment* environment) {
     UNUSED(environment);
     SubGhzProtocolEncoderFiatSpa* instance = malloc(sizeof(SubGhzProtocolEncoderFiatSpa));
@@ -413,7 +441,7 @@ LevelDuration subghz_protocol_encoder_fiat_spa_yield(void* context) {
     return ret;
 }
 
-static void subghz_protocol_encoder_fiat_spa_get_upload(SubGhzProtocolEncoderFiatSpa* instance) {
+void subghz_protocol_encoder_fiat_spa_get_upload(SubGhzProtocolEncoderFiatSpa* instance) {
     furi_assert(instance);
     size_t index = 0;
     uint32_t te_short = subghz_protocol_fiat_spa_const.te_short;

@@ -8,6 +8,7 @@
 #include <lib/subghz/protocols/nice_flor_s.h>
 #include <lib/subghz/protocols/marantec.h>
 #include <lib/subghz/protocols/porsche_cayenne.h>
+#include <lib/subghz/protocols/fiat_spa.h>
 #include <lib/subghz/protocols/vag.h>
 #include <lib/subghz/protocols/ford_v0.h>
 #include <lib/subghz/protocols/mitsubishi_v0.h>
@@ -667,6 +668,30 @@ bool subghz_txrx_gen_subaru_protocol(
                                 serial,
                                 btn,
                                 cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+bool subghz_txrx_gen_fiat_spa_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t fix,
+    uint32_t hop,
+    uint8_t endbyte) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_FIAT_SPA_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_fiat_spa_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                fix,
+                                hop,
+                                endbyte,
                                 txrx->preset)) {
         res = true;
     }

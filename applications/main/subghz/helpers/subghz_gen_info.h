@@ -22,6 +22,7 @@ typedef enum {
     GenFordV0,
     GenMitsubishiV0,
     GenSubaru,
+    GenFiatSpa,
 } GenType;
 
 typedef struct {
@@ -126,6 +127,11 @@ typedef struct {
             uint8_t btn;
             uint16_t cnt;
         } subaru;
+        struct {
+            uint32_t fix;
+            uint32_t hop;
+            uint8_t endbyte;
+        } fiat_spa;
     };
 } GenInfo;
 

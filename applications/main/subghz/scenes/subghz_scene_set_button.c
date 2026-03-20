@@ -68,6 +68,10 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_ptr = &subghz->gen_info->vag.btn;
         byte_count = sizeof(subghz->gen_info->vag.btn);
         break;
+    case GenFiatSpa:
+        byte_ptr = &subghz->gen_info->fiat_spa.endbyte;
+        byte_count = sizeof(subghz->gen_info->fiat_spa.endbyte);
+        break;
     case GenMitsubishiV0:
         byte_ptr = &subghz->gen_info->mitsubishi_v0.btn;
         byte_count = sizeof(subghz->gen_info->mitsubishi_v0.btn);
@@ -131,6 +135,9 @@ bool subghz_scene_set_button_on_event(void* context, SceneManagerEvent event) {
             case GenJarolift:
             case GenNiceFlorS:
             case GenSecPlus2:
+            case GenFiatSpa:
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
             case GenFordV0: {
                 uint8_t fbtn = subghz->gen_info->ford_v0.btn;
                 if(fbtn != 0x01 && fbtn != 0x02 && fbtn != 0x04) {

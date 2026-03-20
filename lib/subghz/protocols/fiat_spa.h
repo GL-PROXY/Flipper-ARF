@@ -30,3 +30,10 @@ SubGhzProtocolStatus subghz_protocol_encoder_fiat_spa_deserialize(
     FlipperFormat* flipper_format);
 void subghz_protocol_encoder_fiat_spa_stop(void* context);
 LevelDuration subghz_protocol_encoder_fiat_spa_yield(void* context);
+bool subghz_protocol_fiat_spa_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t fix,
+    uint32_t hop,
+    uint8_t endbyte,
+    SubGhzRadioPreset* preset);

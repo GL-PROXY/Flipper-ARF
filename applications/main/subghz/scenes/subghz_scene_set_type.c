@@ -99,7 +99,6 @@ static const char* submenu_names[SetTypeMAX] = {
     [SetTypeVAGType3_433]       = "VAG Seat",
     [SetTypeVAGType4_433]       = "VAG Skoda",
     [SetTypePorscheCayenne_433] = "VW/Porsche/Tuareg",
-    [SetTypeFiatMarelli_433]    = "Fiat Marelli",
     [SetTypeFiatSPA_433]        = "FIAT SPA",
     [SetTypeFordV0_433]         = "Ford V0",
     [SetTypeKiaV0_433]          = "KIA/HYU V0",
@@ -315,6 +314,15 @@ bool subghz_scene_set_type_generate_protocol_from_infos(SubGhz* subghz) {
             gen_info.subaru.btn,
             gen_info.subaru.cnt);
         break;
+    case GenFiatSpa:
+        generated_protocol = subghz_txrx_gen_fiat_spa_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.fiat_spa.fix,
+            gen_info.fiat_spa.hop,
+            gen_info.fiat_spa.endbyte);
+        break;
     default:
         furi_crash("Not implemented");
         break;
@@ -351,8 +359,7 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenData: {
                 // Car protocols get frequency selection first
                 SetType stype = (SetType)scene_manager_get_scene_state(subghz->scene_manager, SubGhzSceneSetType);
-                bool is_car = (stype == SetTypeFiatMarelli_433 ||
-                               stype == SetTypeFiatSPA_433 ||
+                bool is_car = (stype == SetTypeFiatSPA_433 ||
                                stype == SetTypeKiaV0_433 ||
                                stype == SetTypeKiaV1_433 ||
                                stype == SetTypeKiaV2_433 ||
@@ -389,6 +396,7 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenMitsubishiV0: // Serial (u32), Button (u8), Counter (u32)
             case GenSubaru: // Serial (u24), Button (u8), Counter (u16)
             case GenVAG: // Serial (u32), Button (u8), Counter (u32)
+            case GenFiatSpa: // Fix (u32), EndByte (u8), Hop (u32)
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 break;
             }

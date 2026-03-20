@@ -77,6 +77,10 @@ void subghz_scene_set_serial_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->vag.serial;
         byte_count = sizeof(subghz->gen_info->vag.serial);
         break;
+    case GenFiatSpa:
+        byte_ptr = (uint8_t*)&subghz->gen_info->fiat_spa.fix;
+        byte_count = sizeof(subghz->gen_info->fiat_spa.fix);
+        break;
     case GenFordV0:
         byte_ptr = (uint8_t*)&subghz->gen_info->ford_v0.serial;
         byte_count = sizeof(subghz->gen_info->ford_v0.serial);
@@ -182,6 +186,10 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 subghz->gen_info->vag.serial =
                     __bswap32(subghz->gen_info->vag.serial);
                 break;
+            case GenFiatSpa:
+                subghz->gen_info->fiat_spa.fix =
+                    __bswap32(subghz->gen_info->fiat_spa.fix);
+                break;
             case GenFordV0:
                 subghz->gen_info->ford_v0.serial =
                     __bswap32(subghz->gen_info->ford_v0.serial);
@@ -218,6 +226,9 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
             case GenCameAtomo:
             case GenPhoenixV2:
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            case GenFiatSpa:
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
             case GenFordV0:
                 if(subghz->gen_info->ford_v0.serial > 0x0FFFFFFF) {

@@ -154,7 +154,6 @@ typedef enum {
     SetTypeVAGType3_433,  // SEAT - AUT64 key 1
     SetTypeVAGType4_433,  // SKODA - AUT64 key 2
     SetTypePorscheCayenne_433,
-    SetTypeFiatMarelli_433,
     SetTypeFiatSPA_433,
     SetTypeFordV0_433,
     SetTypeKiaV0_433,
