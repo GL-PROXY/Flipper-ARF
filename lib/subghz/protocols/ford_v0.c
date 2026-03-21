@@ -55,7 +55,6 @@ typedef struct SubGhzProtocolDecoderFordV0 {
     uint32_t serial;
     uint8_t button;
     uint32_t count;
-    uint8_t bs_magic;
 } SubGhzProtocolDecoderFordV0;
 typedef struct SubGhzProtocolEncoderFordV0 {
     SubGhzProtocolEncoderBase base;
@@ -67,8 +66,7 @@ typedef struct SubGhzProtocolEncoderFordV0 {
     uint32_t serial;
     uint8_t button;
     uint32_t count;
-    uint8_t bs;
-    uint8_t bs_magic;
+    uint8_t checksum;
 } SubGhzProtocolEncoderFordV0;
 typedef enum {
     FordV0DecoderStepReset = 0,
@@ -94,7 +92,7 @@ static void encode_ford_v0(
     uint32_t serial,
     uint8_t button,
     uint32_t count,
-    uint8_t bs,
+    uint8_t checksum,
     uint64_t* key1);
 static bool ford_v0_process_data(SubGhzProtocolDecoderFordV0* instance);
 
@@ -131,11 +129,11 @@ const SubGhzProtocol subghz_protocol_ford_v0 = {
 };
 
 // =============================================================================
-// BS CALCULATION
-// BS = (counter_low_byte + 0x6F + (button << 4)) & 0xFF
+// Checksum CALCULATION
+// checksum = sum of bytes 1-7
 // =============================================================================
-static uint8_t ford_v0_calculate_bs_from_buf(uint8_t* buf) {
-    // BS = sum of bytes 1..7 of the pre-XOR buffer
+static uint8_t ford_v0_calculate_checksum_from_buf(uint8_t* buf) {
+    // Checksum = sum of bytes 1..7 of the pre-XOR buffer
     uint8_t checksum = 0;
     for(int i = 1; i <= 7; i++)
         checksum += buf[i];
@@ -144,7 +142,6 @@ static uint8_t ford_v0_calculate_bs_from_buf(uint8_t* buf) {
 // =============================================================================
 // CRC FUNCTIONS
 // =============================================================================
-
 static uint8_t ford_v0_popcount8(uint8_t x) {
     uint8_t count = 0;
     while(x) {
@@ -170,14 +167,14 @@ static uint8_t ford_v0_calculate_crc(uint8_t* buf) {
 
     return crc;
 }
-static uint8_t ford_v0_calculate_crc_for_tx(uint64_t key1, uint8_t bs) {
+static uint8_t ford_v0_calculate_crc_for_tx(uint64_t key1, uint8_t checksum) {
     uint8_t buf[16] = {0};
 
     for(int i = 0; i < 8; ++i) {
         buf[i] = (uint8_t)(key1 >> (56 - i * 8));
     }
 
-    buf[8] = bs;
+    buf[8] = checksum;
 
     uint8_t crc = ford_v0_calculate_crc(buf);
     return crc ^ 0x80;
@@ -217,7 +214,7 @@ static void decode_ford_v0(
     buf[9] = (uint8_t)(key2 & 0xFF);
 
     uint8_t tmp = buf[8];
-    //uint8_t bs = tmp;             //KEPT FOR CLARITY
+    //uint8_t checksum = tmp;             //KEPT FOR CLARITY
     uint8_t parity = 0;
     uint8_t parity_any = (tmp != 0);
     while(tmp) {
@@ -269,7 +266,7 @@ static void encode_ford_v0(
     uint32_t serial,
     uint8_t button,
     uint32_t count,
-    uint8_t bs,
+    uint8_t checksum,
     uint64_t* key1) {
     if(!key1) {
         FURI_LOG_E(TAG, "encode_ford_v0: NULL key1 pointer");
@@ -296,19 +293,19 @@ static void encode_ford_v0(
     buf[6] = pre_xor_6;
     buf[7] = pre_xor_7;
 
-    // BS = checksum of bytes 1..7 before XOR
-    bs = ford_v0_calculate_bs_from_buf(buf);
+    //checksum = checksum of bytes 1..7 before XOR
+    checksum = ford_v0_calculate_checksum_from_buf(buf);
 
     uint8_t post_xor_6 = (count_mid & 0xAA) | (count_low & 0x55);
     uint8_t post_xor_7 = (count_low & 0xAA) | (count_mid & 0x55);
 
     uint8_t parity = 0;
-    uint8_t tmp = bs;
+    uint8_t tmp = checksum;
     while(tmp) {
         parity ^= (tmp & 1);
         tmp >>= 1;
     }
-    bool parity_bit = (bs != 0) ? (parity != 0) : false;
+    bool parity_bit = (checksum != 0) ? (parity != 0) : false;
 
     if(parity_bit) {
         uint8_t xor_byte = post_xor_7;
@@ -337,11 +334,11 @@ static void encode_ford_v0(
 
     FURI_LOG_I(
         TAG,
-        "Encode: Sn=%08lX Btn=%d Cnt=%05lX BS=%02X",
+        "Encode: Sn=%08lX Btn=%d Cnt=%05lX Checksum=%02X",
         (unsigned long)serial,
         button,
         (unsigned long)count,
-        bs);
+        checksum);
     FURI_LOG_I(
         TAG,
         "Encode key1: %08lX%08lX",
@@ -382,7 +379,7 @@ void* subghz_protocol_encoder_ford_v0_alloc(SubGhzEnvironment* environment) {
     instance->serial = 0;
     instance->button = 0;
     instance->count = 0;
-    instance->bs = 0;
+    instance->checksum = 0;
 
     FURI_LOG_I(TAG, "Encoder allocated");
     return instance;
@@ -590,30 +587,30 @@ SubGhzProtocolStatus
 
         instance->button = subghz_protocol_ford_v0_get_btn_code();
 
-        // BS is calculated inside encode_ford_v0 from buf[1..7]
-        instance->bs = 0; // will be set by encode_ford_v0
+        // Checksum is calculated inside encode_ford_v0 from buf[1..7]
+        instance->checksum = 0; // will be set by encode_ford_v0
 
         encode_ford_v0(
             header_byte,
             instance->serial,
             instance->button,
             instance->count,
-            instance->bs,
+            instance->checksum,
             &instance->key1);
 
         instance->generic.data = instance->key1;
         instance->generic.data_count_bit = 64;
 
-        uint8_t calculated_crc = ford_v0_calculate_crc_for_tx(instance->key1, instance->bs);
-        instance->key2 = ((uint16_t)instance->bs << 8) | calculated_crc;
+        uint8_t calculated_crc = ford_v0_calculate_crc_for_tx(instance->key1, instance->checksum);
+        instance->key2 = ((uint16_t)instance->checksum << 8) | calculated_crc;
 
         FURI_LOG_I(
             TAG,
-            "Encoded: Sn=%08lX Btn=%02X Cnt=%05lX BS=%02X CRC=%02X key1=%08lX%08lX",
+            "Encoded: Sn=%08lX Btn=%02X Cnt=%05lX Checksum=%02X CRC=%02X key1=%08lX%08lX",
             (unsigned long)instance->serial,
             instance->button,
             (unsigned long)instance->count,
-            instance->bs,
+            instance->checksum,
             calculated_crc,
             (unsigned long)(instance->key1 >> 32),
             (unsigned long)(instance->key1 & 0xFFFFFFFF));
@@ -641,8 +638,8 @@ SubGhzProtocolStatus
         bool cnt_wr = flipper_format_insert_or_update_uint32(flipper_format, "Cnt", &temp, 1);
         temp = calculated_crc;
         flipper_format_insert_or_update_uint32(flipper_format, "CRC", &temp, 1);
-        temp = instance->bs;
-        flipper_format_insert_or_update_uint32(flipper_format, "BS", &temp, 1);
+        temp = instance->checksum;
+        flipper_format_insert_or_update_uint32(flipper_format, "Checksum", &temp, 1);
 
         FURI_LOG_I(TAG, "File updated: Key ok=%d Cnt ok=%d", key_wr, cnt_wr);
 
@@ -870,7 +867,7 @@ SubGhzProtocolStatus subghz_protocol_decoder_ford_v0_serialize(
 
     if(ret == SubGhzProtocolStatusOk) {
         uint32_t temp = (instance->key2 >> 8) & 0xFF;
-        flipper_format_write_uint32(flipper_format, "BS", &temp, 1);
+        flipper_format_write_uint32(flipper_format, "Checksum", &temp, 1);
 
         temp = instance->key2 & 0xFF;
         flipper_format_write_uint32(flipper_format, "CRC", &temp, 1);
@@ -906,15 +903,15 @@ SubGhzProtocolStatus
 
         flipper_format_rewind(flipper_format);
 
-        uint32_t bs_temp = 0;
+        uint32_t checksum_temp = 0;
         uint32_t crc_temp = 0;
-        flipper_format_read_uint32(flipper_format, "BS", &bs_temp, 1);
+        flipper_format_read_uint32(flipper_format, "Checksum", &checksum_temp, 1);
         flipper_format_read_uint32(flipper_format, "CRC", &crc_temp, 1);
-        instance->key2 = ((bs_temp & 0xFF) << 8) | (crc_temp & 0xFF);
+        instance->key2 = ((checksum_temp & 0xFF) << 8) | (crc_temp & 0xFF);
         FURI_LOG_I(
             TAG,
-            "Decoder deserialize: BS=0x%02lX CRC=0x%02lX key2=0x%04X",
-            bs_temp,
+            "Decoder deserialize: Checksum=0x%02lX CRC=0x%02lX key2=0x%04X",
+            checksum_temp,
             crc_temp,
             instance->key2);
 
