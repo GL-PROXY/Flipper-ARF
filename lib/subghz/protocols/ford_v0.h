@@ -1,23 +1,11 @@
 #pragma once
 
-#include <furi.h>
-#include <lib/subghz/protocols/base.h>
-#include <lib/subghz/types.h>
-#include <lib/subghz/blocks/const.h>
-#include <lib/subghz/blocks/decoder.h>
-#include <lib/subghz/blocks/encoder.h>
-#include <lib/subghz/blocks/generic.h>
-#include <lib/subghz/blocks/math.h>
-#include <flipper_format/flipper_format.h>
-#include <lib/toolbox/manchester_decoder.h>
+#include "base.h"
 
-#include <lib/subghz/blocks/custom_btn.h>
-
-#define FORD_PROTOCOL_V0_NAME "Ford V0"
+#define SUBGHZ_PROTOCOL_FORD_V0_NAME "FORD V0"
 
 extern const SubGhzProtocol subghz_protocol_ford_v0;
 
-// Decoder functions
 void* subghz_protocol_decoder_ford_v0_alloc(SubGhzEnvironment* environment);
 void subghz_protocol_decoder_ford_v0_free(void* context);
 void subghz_protocol_decoder_ford_v0_reset(void* context);
@@ -31,7 +19,6 @@ SubGhzProtocolStatus
     subghz_protocol_decoder_ford_v0_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_decoder_ford_v0_get_string(void* context, FuriString* output);
 
-// Encoder functions
 void* subghz_protocol_encoder_ford_v0_alloc(SubGhzEnvironment* environment);
 void subghz_protocol_encoder_ford_v0_free(void* context);
 SubGhzProtocolStatus
