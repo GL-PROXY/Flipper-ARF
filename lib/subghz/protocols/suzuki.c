@@ -500,3 +500,69 @@ LevelDuration subghz_protocol_encoder_suzuki_yield(void *context)
 
     return ret;
 }
+
+bool subghz_protocol_suzuki_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderSuzuki* instance = context;
+
+    instance->generic.serial = serial & 0x0FFFFFFF;
+    instance->generic.btn = btn & 0xF;
+    instance->generic.cnt = cnt & 0xFFFFF;
+
+    uint64_t new_data = 0;
+    new_data |= ((uint64_t)(instance->generic.cnt)    << 44);
+    new_data |= ((uint64_t)(instance->generic.serial) << 16);
+    new_data |= ((uint64_t)(instance->generic.btn)    << 12);
+
+    uint8_t crc = suzuki_calculate_crc(new_data);
+    new_data |= ((uint64_t)crc << 4);
+
+    instance->generic.data = new_data;
+    instance->generic.data_count_bit = 64;
+
+    subghz_custom_btn_set_original(suzuki_btn_to_custom(instance->generic.btn));
+    subghz_custom_btn_set_max(4);
+
+    size_t preamble_count = SUZUKI_ENCODER_PREAMBLE_COUNT;
+    instance->encoder.size_upload = (preamble_count * 2) + (64 * 2) + 1;
+    if(instance->encoder.upload) free(instance->encoder.upload);
+    instance->encoder.upload = malloc(instance->encoder.size_upload * sizeof(LevelDuration));
+
+    size_t index = 0;
+    for(size_t i = 0; i < preamble_count; i++) {
+        instance->encoder.upload[index++] = level_duration_make(true, subghz_protocol_suzuki_const.te_short);
+        instance->encoder.upload[index++] = level_duration_make(false, subghz_protocol_suzuki_const.te_short);
+    }
+    for(size_t i = 0; i < 64; i++) {
+        uint8_t bit = (instance->generic.data >> (63 - i)) & 1;
+        if(bit) {
+            instance->encoder.upload[index++] = level_duration_make(true, subghz_protocol_suzuki_const.te_long);
+        } else {
+            instance->encoder.upload[index++] = level_duration_make(true, subghz_protocol_suzuki_const.te_short);
+        }
+        instance->encoder.upload[index++] = level_duration_make(false, subghz_protocol_suzuki_const.te_short);
+    }
+    instance->encoder.upload[index++] = level_duration_make(false, SUZUKI_GAP_TIME);
+    instance->encoder.front = 0;
+    instance->encoder.repeat = 5;
+    instance->encoder.is_running = true;
+
+    if(subghz_block_generic_serialize(&instance->generic, flipper_format, preset) !=
+       SubGhzProtocolStatusOk)
+        return false;
+
+    uint8_t key_data[8];
+    for(size_t i = 0; i < 8; i++) {
+        key_data[i] = (instance->generic.data >> (56 - i * 8)) & 0xFF;
+    }
+    if(!flipper_format_update_hex(flipper_format, "Key", key_data, 8))
+        return false;
+
+    return true;
+}

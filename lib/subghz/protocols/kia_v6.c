@@ -487,15 +487,19 @@ SubGhzProtocolStatus subghz_protocol_decoder_kia_v6_deserialize(void* context, F
     }
     if(ret == SubGhzProtocolStatusOk) {
         uint32_t temp;
+        flipper_format_rewind(flipper_format);
         if(flipper_format_read_uint32(flipper_format, "Key_2", &temp, 1)) {
             instance->stored_part2_low = temp;
         }
+        flipper_format_rewind(flipper_format);
         if(flipper_format_read_uint32(flipper_format, "Key_3", &temp, 1)) {
             instance->stored_part2_high = temp;
         }
+        flipper_format_rewind(flipper_format);
         if(flipper_format_read_uint32(flipper_format, "Key_4", &temp, 1)) {
             instance->data_part3 = (uint16_t)temp;
         }
+        flipper_format_rewind(flipper_format);
         if(flipper_format_read_uint32(flipper_format, "Fx", &temp, 1)) {
             instance->fx_field = (uint8_t)temp;
         }
@@ -824,3 +828,48 @@ const SubGhzProtocol subghz_protocol_kia_v6 = {
     .decoder = &subghz_protocol_kia_v6_decoder,
     .encoder = &subghz_protocol_kia_v6_encoder,
 };
+
+bool subghz_protocol_kia_v6_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t fx,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV6* instance = context;
+
+    instance->generic.serial = serial & 0x00FFFFFF;
+    instance->generic.btn = btn & 0x0F;
+    instance->generic.cnt = cnt;
+    instance->generic.data_count_bit = 144;
+    instance->fx_field = fx;
+    subghz_custom_btn_set_original(kia_v6_btn_to_custom(btn));
+    subghz_custom_btn_set_max(4);
+
+    uint32_t p1_lo, p1_hi, p2_lo, p2_hi;
+    uint16_t p3;
+    kia_v6_encrypt_payload(fx, serial & 0x00FFFFFF, btn & 0x0F, cnt,
+                           &p1_lo, &p1_hi, &p2_lo, &p2_hi, &p3);
+
+    instance->generic.data = ((uint64_t)p1_hi << 32) | p1_lo;
+
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        ret = ret && flipper_format_write_uint32(flipper_format, "Key_2", &p2_lo, 1);
+        ret = ret && flipper_format_write_uint32(flipper_format, "Key_3", &p2_hi, 1);
+        uint32_t tmp = p3;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Key_4", &tmp, 1);
+        tmp = fx;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Fx", &tmp, 1);
+        tmp = serial & 0x00FFFFFF;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Serial", &tmp, 1);
+        tmp = btn;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Btn", &tmp, 1);
+        tmp = cnt;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Cnt", &tmp, 1);
+    }
+    return ret;
+}

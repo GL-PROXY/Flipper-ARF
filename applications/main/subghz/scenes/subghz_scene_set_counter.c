@@ -5,6 +5,7 @@
 
 #define TAG "SubGhzSetCounter"
 
+
 void subghz_scene_set_counter_byte_input_callback(void* context) {
     SubGhz* subghz = context;
 
@@ -82,6 +83,31 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->fiat_spa.hop;
         byte_count = sizeof(subghz->gen_info->fiat_spa.hop);
         break;
+    case GenKiaV0:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v0.cnt;
+        byte_count = sizeof(subghz->gen_info->kia_v0.cnt);
+        break;
+    case GenKiaV1:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v1.cnt;
+        byte_count = sizeof(subghz->gen_info->kia_v1.cnt);
+        break;
+    case GenKiaV2:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v2.cnt;
+        byte_count = sizeof(subghz->gen_info->kia_v2.cnt);
+        break;
+    case GenKiaV3:
+    case GenKiaV4:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v3v4.cnt;
+        byte_count = sizeof(subghz->gen_info->kia_v3v4.cnt);
+        break;
+    case GenKiaV5:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v5.cnt;
+        byte_count = sizeof(subghz->gen_info->kia_v5.cnt);
+        break;
+    case GenKiaV6:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v6.cnt;
+        byte_count = sizeof(subghz->gen_info->kia_v6.cnt);
+        break;
     case GenMitsubishiV0:
         byte_ptr = (uint8_t*)&subghz->gen_info->mitsubishi_v0.cnt;
         byte_count = sizeof(subghz->gen_info->mitsubishi_v0.cnt);
@@ -89,6 +115,10 @@ void subghz_scene_set_counter_on_enter(void* context) {
     case GenSubaru:
         byte_ptr = (uint8_t*)&subghz->gen_info->subaru.cnt;
         byte_count = sizeof(subghz->gen_info->subaru.cnt);
+        break;
+    case GenSuzuki:
+        byte_ptr = (uint8_t*)&subghz->gen_info->suzuki.cnt;
+        byte_count = sizeof(subghz->gen_info->suzuki.cnt);
         break;
     // Not needed for these types
     case GenData:
@@ -119,6 +149,8 @@ void subghz_scene_set_counter_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "Mitsubishi Counter\n(16-bit) Max: 0000FFFF");
     } else if(subghz->gen_info->type == GenSubaru) {
         byte_input_set_header_text(byte_input, "Subaru Counter\n(16-bit) Max: 0000FFFF");
+    } else if(subghz->gen_info->type == GenSuzuki) {
+        byte_input_set_header_text(byte_input, "Suzuki Counter\n(20-bit) Max: 000FFFFF");
     } else {
         byte_input_set_header_text(byte_input, "Enter COUNTER in hex");
     }
@@ -192,6 +224,25 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
             case GenFiatSpa:
                 subghz->gen_info->fiat_spa.hop = __bswap32(subghz->gen_info->fiat_spa.hop);
                 break;
+            case GenKiaV0:
+                subghz->gen_info->kia_v0.cnt = __bswap16(subghz->gen_info->kia_v0.cnt);
+                break;
+            case GenKiaV1:
+                subghz->gen_info->kia_v1.cnt = __bswap16(subghz->gen_info->kia_v1.cnt);
+                break;
+            case GenKiaV2:
+                subghz->gen_info->kia_v2.cnt = __bswap16(subghz->gen_info->kia_v2.cnt);
+                break;
+            case GenKiaV3:
+            case GenKiaV4:
+                subghz->gen_info->kia_v3v4.cnt = __bswap16(subghz->gen_info->kia_v3v4.cnt);
+                break;
+            case GenKiaV5:
+                subghz->gen_info->kia_v5.cnt = __bswap16(subghz->gen_info->kia_v5.cnt);
+                break;
+            case GenKiaV6:
+                subghz->gen_info->kia_v6.cnt = __bswap32(subghz->gen_info->kia_v6.cnt);
+                break;
             case GenMitsubishiV0:
                 subghz->gen_info->mitsubishi_v0.cnt =
                     __bswap32(subghz->gen_info->mitsubishi_v0.cnt);
@@ -199,6 +250,10 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
             case GenSubaru:
                 subghz->gen_info->subaru.cnt =
                     __bswap16(subghz->gen_info->subaru.cnt);
+                break;
+            case GenSuzuki:
+                subghz->gen_info->suzuki.cnt =
+                    __bswap32(subghz->gen_info->suzuki.cnt);
                 break;
                 // Not needed for these types
             case GenData:
@@ -329,6 +384,73 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->ford_v0.cnt,
                     subghz->gen_info->ford_v0.bs_magic);
                 break;
+            case GenKiaV3:
+                generated_protocol = subghz_txrx_gen_kia_v3_v4_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v3v4.serial,
+                    subghz->gen_info->kia_v3v4.btn,
+                    subghz->gen_info->kia_v3v4.cnt,
+                    1);
+                break;
+            case GenKiaV4:
+                generated_protocol = subghz_txrx_gen_kia_v3_v4_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v3v4.serial,
+                    subghz->gen_info->kia_v3v4.btn,
+                    subghz->gen_info->kia_v3v4.cnt,
+                    0);
+                break;
+            case GenKiaV5:
+                generated_protocol = subghz_txrx_gen_kia_v5_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v5.serial,
+                    subghz->gen_info->kia_v5.btn,
+                    subghz->gen_info->kia_v5.cnt);
+                break;
+            case GenKiaV6:
+                generated_protocol = subghz_txrx_gen_kia_v6_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v6.serial,
+                    subghz->gen_info->kia_v6.btn,
+                    subghz->gen_info->kia_v6.cnt,
+                    subghz->gen_info->kia_v6.fx);
+                break;
+                break;
+            case GenKiaV2:
+                generated_protocol = subghz_txrx_gen_kia_v2_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v2.serial,
+                    subghz->gen_info->kia_v2.btn,
+                    subghz->gen_info->kia_v2.cnt);
+                break;
+            case GenKiaV1:
+                generated_protocol = subghz_txrx_gen_kia_v1_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v1.serial,
+                    subghz->gen_info->kia_v1.btn,
+                    subghz->gen_info->kia_v1.cnt);
+                break;
+            case GenKiaV0:
+                generated_protocol = subghz_txrx_gen_kia_v0_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->kia_v0.serial,
+                    subghz->gen_info->kia_v0.btn,
+                    subghz->gen_info->kia_v0.cnt);
+                break;
             case GenFiatSpa:
                 generated_protocol = subghz_txrx_gen_fiat_spa_protocol(
                     subghz->txrx,
@@ -380,6 +502,22 @@ bool subghz_scene_set_counter_on_event(void* context, SceneManagerEvent event) {
                     subghz->gen_info->subaru.btn,
                     subghz->gen_info->subaru.cnt);
                 break;
+            case GenSuzuki:
+                if(subghz->gen_info->suzuki.cnt > 0x000FFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Counter too large!\nMax: 0x000FFFFF\n(20-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                generated_protocol = subghz_txrx_gen_suzuki_protocol(
+                    subghz->txrx,
+                    subghz->gen_info->mod,
+                    subghz->gen_info->freq,
+                    subghz->gen_info->suzuki.serial,
+                    subghz->gen_info->suzuki.btn,
+                    subghz->gen_info->suzuki.cnt);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -413,6 +551,10 @@ void subghz_scene_set_counter_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+
+
 
 
 

@@ -81,6 +81,29 @@ void subghz_scene_set_serial_on_enter(void* context) {
         byte_ptr = (uint8_t*)&subghz->gen_info->fiat_spa.fix;
         byte_count = sizeof(subghz->gen_info->fiat_spa.fix);
         break;
+    case GenKiaV0:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v0.serial;
+        byte_count = sizeof(subghz->gen_info->kia_v0.serial);
+        break;
+    case GenKiaV1:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v1.serial;
+        byte_count = sizeof(subghz->gen_info->kia_v1.serial);
+        break;
+    case GenKiaV2:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v2.serial;
+        byte_count = sizeof(subghz->gen_info->kia_v2.serial);
+        break;
+    case GenKiaV3:
+    case GenKiaV4:
+    case GenKiaV5:
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v5.serial;
+        byte_count = sizeof(subghz->gen_info->kia_v5.serial);
+        break;
+    case GenKiaV6:
+        subghz->gen_info->kia_v6.serial = __bswap32(subghz->gen_info->kia_v6.serial);
+        byte_ptr = (uint8_t*)&subghz->gen_info->kia_v6.serial + 1;
+        byte_count = 3;
+        break;
     case GenFordV0:
         byte_ptr = (uint8_t*)&subghz->gen_info->ford_v0.serial;
         byte_count = sizeof(subghz->gen_info->ford_v0.serial);
@@ -92,6 +115,10 @@ void subghz_scene_set_serial_on_enter(void* context) {
     case GenSubaru:
         byte_ptr = (uint8_t*)&subghz->gen_info->subaru.serial;
         byte_count = sizeof(subghz->gen_info->subaru.serial);
+        break;
+    case GenSuzuki:
+        byte_ptr = (uint8_t*)&subghz->gen_info->suzuki.serial;
+        byte_count = sizeof(subghz->gen_info->suzuki.serial);
         break;
     // Not needed for these types
     case GenData:
@@ -190,6 +217,26 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 subghz->gen_info->fiat_spa.fix =
                     __bswap32(subghz->gen_info->fiat_spa.fix);
                 break;
+            case GenKiaV0:
+                subghz->gen_info->kia_v0.serial =
+                    __bswap32(subghz->gen_info->kia_v0.serial);
+                break;
+            case GenKiaV1:
+                subghz->gen_info->kia_v1.serial =
+                    __bswap32(subghz->gen_info->kia_v1.serial);
+                break;
+            case GenKiaV2:
+                subghz->gen_info->kia_v2.serial =
+                    __bswap32(subghz->gen_info->kia_v2.serial);
+                break;
+            case GenKiaV3:
+            case GenKiaV4:
+            case GenKiaV5:
+                subghz->gen_info->kia_v5.serial = __bswap32(subghz->gen_info->kia_v5.serial);
+                break;
+            case GenKiaV6:
+                subghz->gen_info->kia_v6.serial = __bswap32(subghz->gen_info->kia_v6.serial);
+                break;
             case GenFordV0:
                 subghz->gen_info->ford_v0.serial =
                     __bswap32(subghz->gen_info->ford_v0.serial);
@@ -201,6 +248,10 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
             case GenSubaru:
                 subghz->gen_info->subaru.serial =
                     __bswap32(subghz->gen_info->subaru.serial);
+                break;
+            case GenSuzuki:
+                subghz->gen_info->suzuki.serial =
+                    __bswap32(subghz->gen_info->suzuki.serial);
                 break;
             // Not needed for these types
             case GenData:
@@ -228,6 +279,20 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
             case GenFiatSpa:
+            case GenKiaV0:
+            case GenKiaV1:
+            case GenKiaV2:
+            case GenKiaV3:
+            case GenKiaV4:
+            case GenKiaV5:
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
+                break;
+            case GenKiaV6:
+                if(subghz->gen_info->kia_v6.serial > 0x00FFFFFF) {
+                    furi_string_set(subghz->error_str, "Serial too large!\nMax: 0x00FFFFFF\n(24-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
             case GenFordV0:
@@ -273,6 +338,16 @@ bool subghz_scene_set_serial_on_event(void* context, SceneManagerEvent event) {
                 }
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
                 break;
+            case GenSuzuki:
+                if(subghz->gen_info->suzuki.serial > 0x0FFFFFFF) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Serial too large!\nMax: 0x0FFFFFFF\n(28-bit only)");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetButton);
+                break;
             // Not needed for these types
             case GenData:
             case GenSecPlus1:
@@ -294,6 +369,9 @@ void subghz_scene_set_serial_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+
 
 
 

@@ -142,6 +142,38 @@ static void subghz_protocol_encoder_kia_v2_get_upload(SubGhzProtocolEncoderKiaV2
     instance->encoder.front = 0;
 }
 
+
+bool subghz_protocol_kia_v2_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV2* instance = context;
+    instance->generic.serial = serial;
+    instance->generic.btn = btn & 0x0F;
+    instance->generic.cnt = cnt & 0xFFF;
+    instance->generic.data_count_bit = 53;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(4);
+
+    uint64_t new_data = (1ULL << 52); // bit52 flag
+    new_data |= ((uint64_t)serial << 20) & 0x000FFFFFFFF00000ULL;
+    uint32_t uVar6 = ((uint32_t)((cnt & 0xFF)) << 8) |
+                     ((uint32_t)(btn & 0x0F) << 16) |
+                     ((uint32_t)(cnt >> 4) & 0xF0);
+    new_data |= (uint64_t)uVar6;
+
+    instance->generic.data = new_data;
+    uint8_t crc = kia_v2_calculate_crc(instance->generic.data);
+    instance->generic.data = (instance->generic.data & ~0x0FULL) | crc;
+
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    return ret;
+}
 void* subghz_protocol_encoder_kia_v2_alloc(SubGhzEnvironment* environment) {
     UNUSED(environment);
     SubGhzProtocolEncoderKiaV2* instance = malloc(sizeof(SubGhzProtocolEncoderKiaV2));

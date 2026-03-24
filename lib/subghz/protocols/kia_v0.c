@@ -119,6 +119,36 @@ static bool kia_verify_crc(uint64_t data) {
 // ENCODER IMPLEMENTATION
 // ============================================================================
 
+
+bool subghz_protocol_kia_v0_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKIA* instance = context;
+    instance->generic.serial = serial & 0x0FFFFFFF;
+    instance->generic.btn = btn & 0x0F;
+    instance->generic.cnt = cnt;
+    instance->generic.data_count_bit = 61;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(4);
+
+    // Build data packet
+    uint64_t data = 0;
+    data |= ((uint64_t)(0x0F) << 56);
+    data |= ((uint64_t)(cnt & 0xFFFF) << 40);
+    data |= ((uint64_t)(serial & 0x0FFFFFFF) << 12);
+    data |= ((uint64_t)(btn & 0x0F) << 8);
+    data |= kia_calculate_crc(data);
+    instance->generic.data = data;
+
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    return ret;
+}
 void* subghz_protocol_encoder_kia_alloc(SubGhzEnvironment* environment) {
     UNUSED(environment);
     SubGhzProtocolEncoderKIA* instance = malloc(sizeof(SubGhzProtocolEncoderKIA));

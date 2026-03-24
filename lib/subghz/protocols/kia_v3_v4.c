@@ -475,7 +475,7 @@ SubGhzProtocolStatus
 
         flipper_format_rewind(flipper_format);
         uint32_t version_temp;
-        if(flipper_format_read_uint32(flipper_format, "Version", &version_temp, 1)) {
+        if(flipper_format_read_uint32(flipper_format, "KiaVersion", &version_temp, 1)) {
             if(!version_from_protocol_name) {
                 instance->version = (uint8_t)version_temp;
             }
@@ -757,7 +757,7 @@ SubGhzProtocolStatus subghz_protocol_decoder_kia_v3_v4_serialize(
 
     if(ret == SubGhzProtocolStatusOk) {
         uint32_t temp = instance->version;
-        if(!flipper_format_write_uint32(flipper_format, "Version", &temp, 1)) {
+        if(!flipper_format_write_uint32(flipper_format, "KiaVersion", &temp, 1)) {
             ret = SubGhzProtocolStatusErrorParserOthers;
         }
     }
@@ -786,43 +786,54 @@ SubGhzProtocolStatus
     }
     
     if(ret == SubGhzProtocolStatusOk) {
+        flipper_format_rewind(flipper_format);
         if(!flipper_format_read_uint32(flipper_format, "Encrypted", &instance->encrypted, 1)) {
             instance->encrypted = 0;
         }
-        
+
+        flipper_format_rewind(flipper_format);
         if(!flipper_format_read_uint32(flipper_format, "Decrypted", &instance->decrypted, 1)) {
             instance->decrypted = 0;
         }
-        
+
+        flipper_format_rewind(flipper_format);
         uint32_t temp_version = 0;
-        if(flipper_format_read_uint32(flipper_format, "Version", &temp_version, 1)) {
+        if(flipper_format_read_uint32(flipper_format, "KiaVersion", &temp_version, 1)) {
             instance->version = temp_version;
         } else {
             instance->version = 0;
         }
-        
+
+        flipper_format_rewind(flipper_format);
         uint32_t temp_crc = 0;
         if(flipper_format_read_uint32(flipper_format, "CRC", &temp_crc, 1)) {
             instance->crc = temp_crc;
         } else {
             instance->crc = 0;
         }
-        
-        if(instance->decrypted != 0) {
-            instance->generic.btn = (instance->decrypted >> 28) & 0x0F;
-            instance->generic.cnt = instance->decrypted & 0xFFFF;
-        }
-        
+        // Re-derive everything from key bytes - works for both captured and manually created files
         if(instance->generic.data != 0) {
             uint8_t b[8];
             for(int i = 0; i < 8; i++) {
-                b[i] = (instance->generic.data >> ((7-i) * 8)) & 0xFF;
+                b[i] = (instance->generic.data >> ((7 - i) * 8)) & 0xFF;
             }
-            
-            instance->generic.serial = ((uint32_t)reverse8(b[7] & 0xF0) << 24) | 
-                                      ((uint32_t)reverse8(b[6]) << 16) |
-                                      ((uint32_t)reverse8(b[5]) << 8) | 
-                                      (uint32_t)reverse8(b[4]);
+
+            instance->encrypted = ((uint32_t)reverse8(b[3]) << 24) | ((uint32_t)reverse8(b[2]) << 16) |
+                                  ((uint32_t)reverse8(b[1]) << 8) | (uint32_t)reverse8(b[0]);
+
+            instance->generic.serial = ((uint32_t)reverse8(b[7] & 0xF0) << 24) |
+                                       ((uint32_t)reverse8(b[6]) << 16) |
+                                       ((uint32_t)reverse8(b[5]) << 8) |
+                                       (uint32_t)reverse8(b[4]);
+
+            instance->generic.btn = (reverse8(b[7]) & 0xF0) >> 4;
+
+            instance->decrypted = keeloq_common_decrypt(instance->encrypted, KIA_MF_KEY);
+            instance->generic.cnt = instance->decrypted & 0xFFFF;
+
+            if(instance->crc == 0) {
+                instance->crc = kia_v3_v4_calculate_crc(b);
+            }
         }
 
         if(subghz_custom_btn_get_original() == 0) {
@@ -884,4 +895,40 @@ void subghz_protocol_decoder_kia_v3_v4_get_string(void* context, FuriString* out
         instance->generic.cnt,
         instance->crc,
         crc_valid ? "(OK)" : "(FAIL)");
+}
+
+bool subghz_protocol_kia_v3_v4_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    uint8_t version,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV3V4* instance = context;
+    instance->serial = serial & 0x0FFFFFFF;
+    instance->btn = btn & 0x0F;
+    instance->cnt = cnt;
+    instance->version = version;
+    instance->generic.data_count_bit = 68;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(5);
+
+    uint8_t raw_bytes[9];
+    subghz_protocol_encoder_kia_v3_v4_build_packet(instance, raw_bytes);
+
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        uint32_t tmp = serial;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Serial", &tmp, 1);
+        tmp = btn;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Btn", &tmp, 1);
+        tmp = cnt;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Cnt", &tmp, 1);
+        tmp = version;
+        ret = ret && flipper_format_write_uint32(flipper_format, "KiaVersion", &tmp, 1);
+    }
+    return ret;
 }

@@ -23,6 +23,14 @@ typedef enum {
     GenMitsubishiV0,
     GenSubaru,
     GenFiatSpa,
+    GenKiaV0,
+    GenKiaV1,
+    GenKiaV2,
+    GenSuzuki,
+    GenKiaV3,
+    GenKiaV4,
+    GenKiaV5,
+    GenKiaV6,
 } GenType;
 
 typedef struct {
@@ -132,12 +140,49 @@ typedef struct {
             uint32_t hop;
             uint8_t endbyte;
         } fiat_spa;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint16_t cnt;
+        } kia_v0;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint16_t cnt;
+        } kia_v1;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint16_t cnt;
+        } kia_v2;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint32_t cnt;
+        } suzuki;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint16_t cnt;
+        } kia_v3v4;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint16_t cnt;
+        } kia_v5;
+        struct {
+            uint32_t serial;
+            uint8_t btn;
+            uint32_t cnt;
+            uint8_t fx;
+        } kia_v6;
     };
 } GenInfo;
 
 void subghz_gen_info_reset(GenInfo* gen_info);
 
 void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType type);
+
 
 
 

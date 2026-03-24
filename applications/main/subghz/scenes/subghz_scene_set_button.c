@@ -72,6 +72,31 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_ptr = &subghz->gen_info->fiat_spa.endbyte;
         byte_count = sizeof(subghz->gen_info->fiat_spa.endbyte);
         break;
+    case GenKiaV0:
+        byte_ptr = &subghz->gen_info->kia_v0.btn;
+        byte_count = sizeof(subghz->gen_info->kia_v0.btn);
+        break;
+    case GenKiaV1:
+        byte_ptr = &subghz->gen_info->kia_v1.btn;
+        byte_count = sizeof(subghz->gen_info->kia_v1.btn);
+        break;
+    case GenKiaV2:
+        byte_ptr = &subghz->gen_info->kia_v2.btn;
+        byte_count = sizeof(subghz->gen_info->kia_v2.btn);
+        break;
+    case GenKiaV3:
+    case GenKiaV4:
+        byte_ptr = &subghz->gen_info->kia_v3v4.btn;
+        byte_count = sizeof(subghz->gen_info->kia_v3v4.btn);
+        break;
+    case GenKiaV5:
+        byte_ptr = &subghz->gen_info->kia_v5.btn;
+        byte_count = sizeof(subghz->gen_info->kia_v5.btn);
+        break;
+    case GenKiaV6:
+        byte_ptr = &subghz->gen_info->kia_v6.btn;
+        byte_count = sizeof(subghz->gen_info->kia_v6.btn);
+        break;
     case GenMitsubishiV0:
         byte_ptr = &subghz->gen_info->mitsubishi_v0.btn;
         byte_count = sizeof(subghz->gen_info->mitsubishi_v0.btn);
@@ -79,6 +104,10 @@ void subghz_scene_set_button_on_enter(void* context) {
     case GenSubaru:
         byte_ptr = &subghz->gen_info->subaru.btn;
         byte_count = sizeof(subghz->gen_info->subaru.btn);
+        break;
+    case GenSuzuki:
+        byte_ptr = &subghz->gen_info->suzuki.btn;
+        byte_count = sizeof(subghz->gen_info->suzuki.btn);
         break;
     // Not needed for these types
     case GenPhoenixV2:
@@ -105,6 +134,8 @@ void subghz_scene_set_button_on_enter(void* context) {
         byte_input_set_header_text(byte_input, "Mitsubishi Btn:\n01=Lock 02=Unlock\n04=Trunk");
     } else if(subghz->gen_info->type == GenSubaru) {
         byte_input_set_header_text(byte_input, "Subaru Btn:\n01=Lock  02=Unlock\n03=Trunk 04=Panic");
+    } else if(subghz->gen_info->type == GenSuzuki) {
+        byte_input_set_header_text(byte_input, "Suzuki Btn:\n03=Lock  04=Unlock\n02=Trunk 01=Panic");
     } else {
         byte_input_set_header_text(byte_input, "Enter BUTTON in hex");
     }
@@ -138,6 +169,67 @@ bool subghz_scene_set_button_on_event(void* context, SceneManagerEvent event) {
             case GenFiatSpa:
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
+            case GenKiaV0: {
+                uint8_t kbtn = subghz->gen_info->kia_v0.btn;
+                if(kbtn < 1 || kbtn > 4) {
+                    furi_string_set(subghz->error_str, "Invalid Button!\n01=Lock 02=Unlock\n03=Trunk 04=Horn");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
+            case GenKiaV1: {
+                uint8_t kbtn = subghz->gen_info->kia_v1.btn;
+                if(kbtn < 1 || kbtn > 4) {
+                    furi_string_set(subghz->error_str, "Invalid Button!\n01=Lock 02=Unlock\n03=Trunk 04=Panic");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
+            case GenKiaV2: {
+                uint8_t kbtn = subghz->gen_info->kia_v2.btn;
+                if(kbtn < 1 || kbtn > 4) {
+                    furi_string_set(subghz->error_str, "Invalid Button!\n01=Lock 02=Unlock\n03=Trunk 04=Panic");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
+            case GenKiaV3:
+            case GenKiaV4: {
+                uint8_t kbtn = subghz->gen_info->kia_v3v4.btn;
+                if(kbtn != 0x01 && kbtn != 0x02 && kbtn != 0x03 && kbtn != 0x04 && kbtn != 0x08) {
+                    furi_string_set(subghz->error_str, "Invalid Button!\n01 02 03 04 or 08\nLock Unlock Trunk\nPanic Horn");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
+            case GenKiaV5: {
+                uint8_t k5btn = subghz->gen_info->kia_v5.btn;
+                if(k5btn != 0x01 && k5btn != 0x02 && k5btn != 0x04 && k5btn != 0x08) {
+                    furi_string_set(subghz->error_str, "Invalid Button!\n01=Unlock 02=Lock\n04=Trunk  08=Horn");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
+            case GenKiaV6: {
+                uint8_t k6btn = subghz->gen_info->kia_v6.btn;
+                if(k6btn != 0x01 && k6btn != 0x02 && k6btn != 0x03 && k6btn != 0x04) {
+                    furi_string_set(subghz->error_str, "Invalid Button!\n01=Lock  02=Unlock\n03=Trunk 04=Panic");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
             case GenFordV0: {
                 uint8_t fbtn = subghz->gen_info->ford_v0.btn;
                 if(fbtn != 0x01 && fbtn != 0x02 && fbtn != 0x04) {
@@ -189,6 +281,18 @@ bool subghz_scene_set_button_on_event(void* context, SceneManagerEvent event) {
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
                 break;
             }
+            case GenSuzuki: {
+                uint8_t szbtn = subghz->gen_info->suzuki.btn;
+                if(szbtn != 0x01 && szbtn != 0x02 && szbtn != 0x03 && szbtn != 0x04) {
+                    furi_string_set(
+                        subghz->error_str,
+                        "Invalid Button!\n03=Lock  04=Unlock\n02=Trunk 01=Panic");
+                    scene_manager_next_scene(subghz->scene_manager, SubGhzSceneShowError);
+                    return true;
+                }
+                scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetCounter);
+                break;
+            }
             // Not needed for these types
             case GenCameAtomo:
             case GenPhoenixV2:
@@ -212,6 +316,9 @@ void subghz_scene_set_button_on_exit(void* context) {
     byte_input_set_result_callback(subghz->byte_input, NULL, NULL, NULL, NULL, 0);
     byte_input_set_header_text(subghz->byte_input, "");
 }
+
+
+
 
 
 

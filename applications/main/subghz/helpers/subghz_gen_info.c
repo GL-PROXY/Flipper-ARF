@@ -798,33 +798,30 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         break;
     case SetTypeKiaV0_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenKiaV0,
             .mod = "FM476",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_KIA_V0_NAME,
-            .data.key = key & 0x1FFFFFFFFFFFFFFF,
-            .data.bits = 61,
-            .data.te = 0};
+            .kia_v0.serial = key & 0x0FFFFFFF,
+            .kia_v0.btn = 0x01,
+            .kia_v0.cnt = 0x0001};
         break;
     case SetTypeKiaV1_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenKiaV1,
             .mod = "AM650",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_KIA_V1_NAME,
-            .data.key = key & 0x01FFFFFFFFFFFFFF,
-            .data.bits = 57,
-            .data.te = 0};
+            .kia_v1.serial = key & 0xFFFFFFFF,
+            .kia_v1.btn = 0x01,
+            .kia_v1.cnt = 0x0001};
         break;
     case SetTypeKiaV2_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenKiaV2,
             .mod = "FM476",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_KIA_V2_NAME,
-            .data.key = key & 0x001FFFFFFFFFFFFF,
-            .data.bits = 53,
-            .data.te = 0};
+            .kia_v2.serial = key & 0xFFFFFFFF,
+            .kia_v2.btn = 0x01,
+            .kia_v2.cnt = 0x0001};
         break;
     case SetTypeSubaru_433:
         gen_info = (GenInfo){
@@ -847,13 +844,12 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
         break;
     case SetTypeSuzuki_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenSuzuki,
             .mod = "FM476",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_SUZUKI_NAME,
-            .data.key = key,
-            .data.bits = 64,
-            .data.te = 0};
+            .suzuki.serial = key & 0x0FFFFFFF,
+            .suzuki.btn = 0x03,
+            .suzuki.cnt = 0x0001};
         break;
     case SetTypeMitsubishi_868:
         gen_info = (GenInfo){
@@ -933,35 +929,42 @@ void subghz_scene_set_type_fill_generation_infos(GenInfo* infos_dest, SetType ty
             .ford_v0.cnt = 0x0001,
             .ford_v0.bs_magic = 0x6F};
         break;
-    case SetTypeKiaV3V4_433:
+    case SetTypeKiaV3_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenKiaV3,
             .mod = "FM476",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_KIA_V3_V4_NAME,
-            .data.key = key & 0x0FFFFFFFFFFFFFFF,
-            .data.bits = 68,
-            .data.te = 0};
+            .kia_v3v4.serial = key & 0x0FFFFFFF,
+            .kia_v3v4.btn = 0x01,
+            .kia_v3v4.cnt = 0x0001};
+        break;
+    case SetTypeKiaV4_433:
+        gen_info = (GenInfo){
+            .type = GenKiaV4,
+            .mod = "FM476",
+            .freq = 433920000,
+            .kia_v3v4.serial = key & 0x0FFFFFFF,
+            .kia_v3v4.btn = 0x01,
+            .kia_v3v4.cnt = 0x0001};
         break;
     case SetTypeKiaV5_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenKiaV5,
             .mod = "FM476",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_KIA_V5_NAME,
-            .data.key = key & 0xFFFFFFFFFFFFFFFF,
-            .data.bits = 64,
-            .data.te = 0};
+            .kia_v5.serial = key & 0x0FFFFFFF,
+            .kia_v5.btn = 0x02,
+            .kia_v5.cnt = 0x0001};
         break;
     case SetTypeKiaV6_433:
         gen_info = (GenInfo){
-            .type = GenData,
+            .type = GenKiaV6,
             .mod = "FM476",
             .freq = 433920000,
-            .data.name = SUBGHZ_PROTOCOL_KIA_V6_NAME,
-            .data.key = key & 0xFFFFFFFFFFFFFFFF,
-            .data.bits = 144,
-            .data.te = 0};
+            .kia_v6.serial = key & 0x00FFFFFF,
+            .kia_v6.btn = 0x01,
+            .kia_v6.cnt = 0x00000001,
+            .kia_v6.fx = 0x00};
         break;
     default:
         furi_crash("Not implemented");

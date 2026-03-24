@@ -135,6 +135,53 @@ static const char* subghz_protocol_kia_v1_get_name_button(uint8_t btn) {
 
 
 
+
+bool subghz_protocol_kia_v1_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV1* instance = context;
+    instance->generic.serial = serial;
+    instance->generic.btn = btn;
+    instance->generic.cnt = cnt & 0xFFF;
+    instance->generic.data_count_bit = 57;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(4);
+
+    uint8_t cnt_high = (cnt >> 8) & 0xF;
+    uint8_t char_data[7];
+    char_data[0] = (serial >> 24) & 0xFF;
+    char_data[1] = (serial >> 16) & 0xFF;
+    char_data[2] = (serial >> 8) & 0xFF;
+    char_data[3] = serial & 0xFF;
+    char_data[4] = btn;
+    char_data[5] = cnt & 0xFF;
+
+    uint8_t crc;
+    if(cnt_high == 0) {
+        uint8_t offset = (cnt >= 0x098) ? btn : 1;
+        crc = kia_v1_crc4(char_data, 6, offset);
+    } else if(cnt_high >= 0x6) {
+        char_data[6] = cnt_high;
+        crc = kia_v1_crc4(char_data, 7, 1);
+    } else {
+        crc = kia_v1_crc4(char_data, 6, 1);
+    }
+
+    instance->generic.data = (uint64_t)serial << 24 |
+                             (uint64_t)btn << 16 |
+                             (uint64_t)(cnt & 0xFF) << 8 |
+                             (uint64_t)(cnt_high & 0xF) << 4 |
+                             crc;
+
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    return ret;
+}
 void* subghz_protocol_encoder_kia_v1_alloc(SubGhzEnvironment* environment) {
     UNUSED(environment);
     SubGhzProtocolEncoderKiaV1* instance = malloc(sizeof(SubGhzProtocolEncoderKiaV1));
@@ -254,8 +301,6 @@ static void subghz_protocol_encoder_kia_v1_get_upload(SubGhzProtocolEncoderKiaV1
 
     instance->encoder.size_upload = index;
     instance->encoder.front = 0;
-    
-    FURI_LOG_I(TAG, "Upload built: size=%zu, data=0x%014llX", index, instance->generic.data);
 }
 
 SubGhzProtocolStatus subghz_protocol_encoder_kia_v1_deserialize(void* context, FlipperFormat* flipper_format) {
@@ -278,10 +323,6 @@ SubGhzProtocolStatus subghz_protocol_encoder_kia_v1_deserialize(void* context, F
         instance->generic.btn = (instance->generic.data >> 16) & 0xFF;
         instance->generic.cnt = ((instance->generic.data >> 4) & 0xF) << 8 | 
                                 ((instance->generic.data >> 8) & 0xFF);
-        
-        FURI_LOG_I(TAG, "Deserialized: data=%014llX, serial=%08lX, btn=%02X, cnt=%03lX",
-                   instance->generic.data, instance->generic.serial, 
-                   instance->generic.btn, instance->generic.cnt);
         
         // Imposta bottone originale per custom buttons
         if(subghz_custom_btn_get_original() == 0) {

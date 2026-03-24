@@ -26,3 +26,11 @@ void subghz_protocol_encoder_kia_v6_free(void* context);
 SubGhzProtocolStatus subghz_protocol_encoder_kia_v6_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_encoder_kia_v6_stop(void* context);
 LevelDuration subghz_protocol_encoder_kia_v6_yield(void* context);
+bool subghz_protocol_kia_v6_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t fx,
+    SubGhzRadioPreset* preset);

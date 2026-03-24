@@ -1,3 +1,4 @@
+
 #include "../subghz_i.h"
 #include "../helpers/subghz_txrx_create_protocol_key.h"
 #include "../helpers/subghz_gen_info.h"
@@ -104,7 +105,8 @@ static const char* submenu_names[SetTypeMAX] = {
     [SetTypeKiaV0_433]          = "KIA/HYU V0",
     [SetTypeKiaV1_433]          = "KIA/HYU V1",
     [SetTypeKiaV2_433]          = "KIA/HYU V2",
-    [SetTypeKiaV3V4_433]        = "KIA/HYU V3/V4",
+    [SetTypeKiaV3_433]          = "KIA/HYU V3",
+    [SetTypeKiaV4_433]          = "KIA/HYU V4",
     [SetTypeKiaV5_433]          = "KIA/HYU V5",
     [SetTypeKiaV6_433]          = "KIA/HYU V6",
     [SetTypeSubaru_433]         = "Subaru",
@@ -323,6 +325,52 @@ bool subghz_scene_set_type_generate_protocol_from_infos(SubGhz* subghz) {
             gen_info.fiat_spa.hop,
             gen_info.fiat_spa.endbyte);
         break;
+    case GenKiaV0:
+        generated_protocol = subghz_txrx_gen_kia_v0_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.kia_v0.serial,
+            gen_info.kia_v0.btn,
+            gen_info.kia_v0.cnt);
+        break;
+    case GenKiaV1:
+        generated_protocol = subghz_txrx_gen_kia_v1_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.kia_v1.serial,
+            gen_info.kia_v1.btn,
+            gen_info.kia_v1.cnt);
+        break;
+    case GenKiaV2:
+        generated_protocol = subghz_txrx_gen_kia_v2_protocol(
+            subghz->txrx,
+            gen_info.mod,
+            gen_info.freq,
+            gen_info.kia_v2.serial,
+            gen_info.kia_v2.btn,
+            gen_info.kia_v2.cnt);
+        break;
+    case GenKiaV3:
+        generated_protocol = subghz_txrx_gen_kia_v3_v4_protocol(
+            subghz->txrx, gen_info.mod, gen_info.freq,
+            gen_info.kia_v3v4.serial, gen_info.kia_v3v4.btn,
+            gen_info.kia_v3v4.cnt, 1);
+        break;
+    case GenKiaV4:
+    case GenKiaV5:
+        generated_protocol = subghz_txrx_gen_kia_v3_v4_protocol(
+            subghz->txrx, gen_info.mod, gen_info.freq,
+            gen_info.kia_v3v4.serial, gen_info.kia_v3v4.btn,
+            gen_info.kia_v3v4.cnt, 0);
+        break;
+    case GenKiaV6:
+        generated_protocol = subghz_txrx_gen_kia_v6_protocol(
+            subghz->txrx, gen_info.mod, gen_info.freq,
+            gen_info.kia_v6.serial, gen_info.kia_v6.btn,
+            gen_info.kia_v6.cnt, gen_info.kia_v6.fx);
+        break;
     default:
         furi_crash("Not implemented");
         break;
@@ -359,17 +407,9 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenData: {
                 // Car protocols get frequency selection first
                 SetType stype = (SetType)scene_manager_get_scene_state(subghz->scene_manager, SubGhzSceneSetType);
-                bool is_car = (stype == SetTypeFiatSPA_433 ||
-                               stype == SetTypeKiaV0_433 ||
-                               stype == SetTypeKiaV1_433 ||
-                               stype == SetTypeKiaV2_433 ||
-                               stype == SetTypeKiaV3V4_433 ||
-                               stype == SetTypeKiaV5_433 ||
+                bool is_car = (stype == SetTypeKiaV5_433 ||
                                stype == SetTypeKiaV6_433 ||
-                               stype == SetTypeSubaru_433 ||
-                               stype == SetTypeMazdaSiemens_433 ||
-                               stype == SetTypeSuzuki_433 ||
-                               stype == SetTypeSubaru_433);
+                               stype == SetTypeMazdaSiemens_433);
                 if(is_car) {
                     scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 } else {
@@ -394,9 +434,17 @@ bool subghz_scene_set_type_on_event(void* context, SceneManagerEvent event) {
             case GenPorscheCayenne: // Serial (u32), Button (u8), Counter (u32)
             case GenFordV0: // Serial (u32), Button (u8), Counter (u32)
             case GenMitsubishiV0: // Serial (u32), Button (u8), Counter (u32)
+            case GenSuzuki: // Serial (u32), Button (u8), Counter (u16)
             case GenSubaru: // Serial (u24), Button (u8), Counter (u16)
             case GenVAG: // Serial (u32), Button (u8), Counter (u32)
             case GenFiatSpa: // Fix (u32), EndByte (u8), Hop (u32)
+            case GenKiaV0: // Serial (u28), Button (u4), Counter (u16)
+            case GenKiaV1: // Serial (u32), Button (u8), Counter (u12)
+            case GenKiaV2: // Serial (u32), Button (u4), Counter (u12)
+            case GenKiaV3: // Serial (u28), Button (u4), Counter (u16)
+            case GenKiaV4: // Serial (u28), Button (u4), Counter (u16)
+            case GenKiaV5: // Serial (u28), Button (u4), Counter (u16)
+            case GenKiaV6: // Serial (u24), Button (u4), Counter (u32)
                 scene_manager_next_scene(subghz->scene_manager, SubGhzSceneSetFreq);
                 break;
             }
@@ -411,6 +459,8 @@ void subghz_scene_set_type_on_exit(void* context) {
     SubGhz* subghz = context;
     submenu_reset(subghz->submenu);
 }
+
+
 
 
 

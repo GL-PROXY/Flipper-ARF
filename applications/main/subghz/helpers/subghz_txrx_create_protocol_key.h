@@ -231,6 +231,7 @@ bool subghz_txrx_gen_subaru_protocol(
     uint32_t serial,
     uint8_t btn,
     uint16_t cnt);
+    
 bool subghz_txrx_gen_fiat_spa_protocol(
     void* context,
     const char* preset_name,
@@ -238,3 +239,58 @@ bool subghz_txrx_gen_fiat_spa_protocol(
     uint32_t fix,
     uint32_t hop,
     uint8_t endbyte);
+
+bool subghz_txrx_gen_kia_v0_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt);
+
+bool subghz_txrx_gen_kia_v1_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt);
+
+bool subghz_txrx_gen_kia_v2_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt);
+    
+bool subghz_txrx_gen_suzuki_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt);
+bool subghz_txrx_gen_kia_v3_v4_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    uint8_t version);
+bool subghz_txrx_gen_kia_v5_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt);
+bool subghz_txrx_gen_kia_v6_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t fx);

@@ -34,3 +34,10 @@ void subghz_protocol_encoder_kia_v5_set_counter(void* context, uint16_t counter)
 void subghz_protocol_encoder_kia_v5_increment_counter(void* context);
 uint16_t subghz_protocol_encoder_kia_v5_get_counter(void* context);
 uint8_t subghz_protocol_encoder_kia_v5_get_button(void* context);
+bool subghz_protocol_kia_v5_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset);

@@ -27,3 +27,12 @@ void subghz_protocol_encoder_suzuki_free(void* context);
 SubGhzProtocolStatus subghz_protocol_encoder_suzuki_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_encoder_suzuki_stop(void* context);
 LevelDuration subghz_protocol_encoder_suzuki_yield(void* context);
+
+bool subghz_protocol_suzuki_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    SubGhzRadioPreset* preset);
+

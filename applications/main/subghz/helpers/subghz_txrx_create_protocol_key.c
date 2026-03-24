@@ -9,10 +9,17 @@
 #include <lib/subghz/protocols/marantec.h>
 #include <lib/subghz/protocols/porsche_cayenne.h>
 #include <lib/subghz/protocols/fiat_spa.h>
+#include <lib/subghz/protocols/kia_v0.h>
+#include <lib/subghz/protocols/kia_v1.h>
+#include <lib/subghz/protocols/kia_v2.h>
 #include <lib/subghz/protocols/vag.h>
 #include <lib/subghz/protocols/ford_v0.h>
 #include <lib/subghz/protocols/mitsubishi_v0.h>
 #include <lib/subghz/protocols/subaru.h>
+#include <lib/subghz/protocols/suzuki.h>
+#include <lib/subghz/protocols/kia_v3_v4.h>
+#include <lib/subghz/protocols/kia_v5.h>
+#include <lib/subghz/protocols/kia_v6.h>
 
 #include <flipper_format/flipper_format_i.h>
 #include <lib/toolbox/stream/stream.h>
@@ -545,6 +552,7 @@ void subghz_txrx_gen_key_marantec(uint64_t* result_key) {
 
     *result_key = ((full_key_no_crc >> 8) << 8) | crc;
 }
+
 bool subghz_txrx_gen_porsche_cayenne_protocol(
     void* context,
     const char* preset_name,
@@ -569,6 +577,7 @@ bool subghz_txrx_gen_porsche_cayenne_protocol(
     subghz_transmitter_free(txrx->transmitter);
     return res;
 }
+
 bool subghz_txrx_gen_vag_protocol(
     void* context,
     const char* preset_name,
@@ -623,7 +632,6 @@ bool subghz_txrx_gen_ford_v0_protocol(
     return res;
 }
 
-
 bool subghz_txrx_gen_mitsubishi_v0_protocol(
     void* context,
     const char* preset_name,
@@ -649,7 +657,6 @@ bool subghz_txrx_gen_mitsubishi_v0_protocol(
     return res;
 }
 
-
 bool subghz_txrx_gen_subaru_protocol(
     void* context,
     const char* preset_name,
@@ -674,6 +681,7 @@ bool subghz_txrx_gen_subaru_protocol(
     subghz_transmitter_free(txrx->transmitter);
     return res;
 }
+
 bool subghz_txrx_gen_fiat_spa_protocol(
     void* context,
     const char* preset_name,
@@ -692,6 +700,183 @@ bool subghz_txrx_gen_fiat_spa_protocol(
                                 fix,
                                 hop,
                                 endbyte,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+
+bool subghz_txrx_gen_kia_v0_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_KIA_V0_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_kia_v0_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+
+bool subghz_txrx_gen_kia_v1_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_KIA_V1_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_kia_v1_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+
+bool subghz_txrx_gen_kia_v2_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_KIA_V2_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_kia_v2_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+
+bool subghz_txrx_gen_suzuki_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_SUZUKI_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_suzuki_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+bool subghz_txrx_gen_kia_v3_v4_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    uint8_t version) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_KIA_V3_V4_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_kia_v3_v4_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                version,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+bool subghz_txrx_gen_kia_v5_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_KIA_V5_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_kia_v5_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                txrx->preset)) {
+        res = true;
+    }
+    subghz_transmitter_free(txrx->transmitter);
+    return res;
+}
+
+bool subghz_txrx_gen_kia_v6_protocol(
+    void* context,
+    const char* preset_name,
+    uint32_t frequency,
+    uint32_t serial,
+    uint8_t btn,
+    uint32_t cnt,
+    uint8_t fx) {
+    SubGhzTxRx* txrx = context;
+    bool res = false;
+    txrx->transmitter =
+        subghz_transmitter_alloc_init(txrx->environment, SUBGHZ_PROTOCOL_KIA_V6_NAME);
+    subghz_txrx_set_preset(txrx, preset_name, frequency, NULL, 0);
+    if(txrx->transmitter && subghz_protocol_kia_v6_create_data(
+                                subghz_transmitter_get_protocol_instance(txrx->transmitter),
+                                txrx->fff_data,
+                                serial,
+                                btn,
+                                cnt,
+                                fx,
                                 txrx->preset)) {
         res = true;
     }

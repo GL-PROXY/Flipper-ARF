@@ -303,9 +303,6 @@ SubGhzProtocolStatus
     SubGhzProtocolEncoderKiaV5* instance = context;
     SubGhzProtocolStatus ret = SubGhzProtocolStatusError;
 
-    static uint32_t call_count = 0;
-    call_count++;
-    FURI_LOG_I(TAG, "deserialize #%lu, cnt before=%04lX", call_count, (uint32_t)instance->generic.cnt);
 
     do {
         ret = subghz_block_generic_deserialize(&instance->generic, flipper_format);
@@ -333,7 +330,6 @@ SubGhzProtocolStatus
 
         uint32_t mult = furi_hal_subghz_get_rolling_counter_mult();
 	instance->generic.cnt = (instance->generic.cnt + mult) & 0xFFFF;
-        FURI_LOG_I(TAG, "deserialize #%lu, cnt after=%04lX", call_count, (uint32_t)instance->generic.cnt);
 
         if(subghz_custom_btn_get_original() == 0) {
             subghz_custom_btn_set_original(instance->generic.btn);
@@ -752,4 +748,52 @@ void subghz_protocol_decoder_kia_v5_get_string(void* context, FuriString* output
         seed,
         instance->crc,
         crc_valid ? "(OK)" : "(FAIL)");
+}
+
+bool subghz_protocol_kia_v5_create_data(
+    void* context,
+    FlipperFormat* flipper_format,
+    uint32_t serial,
+    uint8_t btn,
+    uint16_t cnt,
+    SubGhzRadioPreset* preset) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV5* instance = context;
+
+    instance->generic.serial = serial & 0x0FFFFFFF;
+    instance->generic.btn = btn & 0x0F;
+    instance->generic.cnt = cnt;
+    instance->generic.data_count_bit = 64;
+    subghz_custom_btn_set_original(btn);
+    subghz_custom_btn_set_max(4);
+
+    // Build yek and key
+    uint64_t yek = 0;
+    yek |= ((uint64_t)(btn & 0x0F) << 60);
+    yek |= ((uint64_t)(serial & 0x0FFFFFFF) << 32);
+    uint16_t seed = ((uint16_t)(btn & 0x0F) << 12) | (serial & 0x0FFF);
+    uint32_t encrypted = mixer_encode(cnt, seed);
+    yek |= (uint64_t)encrypted;
+
+    uint8_t crc = kia_v5_calculate_crc(yek);
+    uint64_t key = bit_reverse_64(yek);
+    instance->generic.data = key;
+
+    bool ret = SubGhzProtocolStatusOk ==
+        subghz_block_generic_serialize(&instance->generic, flipper_format, preset);
+    if(ret) {
+        uint32_t tmp = serial;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Serial", &tmp, 1);
+        tmp = btn;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Btn", &tmp, 1);
+        tmp = cnt;
+        ret = ret && flipper_format_write_uint32(flipper_format, "Cnt", &tmp, 1);
+        tmp = crc;
+        ret = ret && flipper_format_write_uint32(flipper_format, "CRC", &tmp, 1);
+        uint32_t yek_hi = (uint32_t)(yek >> 32);
+        uint32_t yek_lo = (uint32_t)(yek & 0xFFFFFFFF);
+        ret = ret && flipper_format_write_uint32(flipper_format, "YekHi", &yek_hi, 1);
+        ret = ret && flipper_format_write_uint32(flipper_format, "YekLo", &yek_lo, 1);
+    }
+    return ret;
 }
