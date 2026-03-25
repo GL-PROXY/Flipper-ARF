@@ -50,6 +50,7 @@ This project may incorporate, adapt, or build upon **other open-source projects*
 | Ford | Ford V0 | 315/433 MHz | AM | Yes | Yes | Yes |
 | Fiat | Fiat SpA | 433 MHz | AM | Yes | Yes | Yes |
 | Fiat | Marelli/Delphi | 433 MHz | AM | No | Yes | No |
+| Renault (old models) | Marelli | 433 MHz | AM | No | Yes | No|
 | Mazda | Siemens (5WK49365D) | 315/433 MHz | AM/FM | Yes | Yes | Yes |
 | Kia/Hyundai | KIA/HYU V0 | 433 MHz | FM | Yes | Yes | Yes |
 | Kia/Hyundai | KIA/HYU V1 | 315/433 MHz | AM | Yes | Yes | Yes |
