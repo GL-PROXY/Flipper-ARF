@@ -49,7 +49,8 @@ This project may incorporate, adapt, or build upon **other open-source projects*
 | PSA (Peugeot/Citroën/DS) | PSA GROUP | 433 MHz | AM/FM | Yes | Yes | Yes |
 | Ford | Ford V0 | 315/433 MHz | AM | Yes | Yes | Yes |
 | Fiat | Fiat SpA | 433 MHz | AM | Yes | Yes | Yes |
-| Fiat | Marelli/Delphi | 433 MHz | AM | No | Yes | No |
+| Fiat | Marelli/Delphi | 433 MHz | AM | No | Yes | Yes |
+| Renault (old models) | Marelli | 433 MHz | AM | No | Yes | No|
 | Mazda | Siemens (5WK49365D) | 315/433 MHz | AM/FM | Yes | Yes | Yes |
 | Kia/Hyundai | KIA/HYU V0 | 433 MHz | FM | Yes | Yes | Yes |
 | Kia/Hyundai | KIA/HYU V1 | 315/433 MHz | AM | Yes | Yes | Yes |
@@ -62,6 +63,8 @@ This project may incorporate, adapt, or build upon **other open-source projects*
 | Mitsubishi | Mitsubishi V0 | 868 MHz | FM | Yes | Yes | No |
 | Starline | Star Line | 433 MHz | AM | Yes | Yes | No |
 | Scher-Khan | Scher-Khan | 433 MHz | FM | Yes | Yes | No |
+| Scher-Khan | Magic Code PRO1/PRO2 | 433 MHz | FM | Yes | Yes | Yes |
+| Sheriff | Sheriff CFM (ZX-750/930) | 433 MHz | AM | Yes | Yes | No |
 
 ### Gate / Access Protocols
 

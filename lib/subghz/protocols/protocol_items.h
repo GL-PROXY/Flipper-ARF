@@ -76,3 +76,4 @@
 #include "mazda_siemens.h"
 #include "star_line.h"
 #include "scher_khan.h"
+#include "sheriff_cfm.h"
